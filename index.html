@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0C">
+<meta name="description" content="O'Gara family New York trip, August 14-17 2026.">
+<title>O'Gara / NYC — Aug 14–17</title>
+
+<!-- Apple/Android home-screen install -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="O'Gara NYC">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230B0B0C'/%3E%3Ccircle cx='90' cy='90' r='58' fill='%23EE352E'/%3E%3Ctext x='90' y='90' font-family='Helvetica,Arial' font-size='72' font-weight='700' fill='%23fff' text-anchor='middle' dominant-baseline='central'%3EOG%3C/text%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Palette is lifted from the MTA route-bullet system. Each day
+   of the trip is tagged with the line you'll actually ride that
+   day, and that colour carries through the rail, pins and cards.
+   ============================================================ */
+:root{
+  --ink:        #0B0B0C;   /* signage black - the base field   */
+  --ink-2:      #17181A;   /* raised surface                   */
+  --ink-3:      #232528;   /* hairline / divider               */
+  --paper:      #F2F2F0;   /* sign face white                  */
+  --paper-dim:  #A7A9AC;   /* secondary type                   */
+  --paper-mute: #6E7175;   /* tertiary type                    */
+
+  --line-7:  #B933AD;      /* Fri  - 7 train, purple           */
+  --line-1:  #EE352E;      /* Sat  - 1 train, red              */
+  --line-6:  #00933C;      /* Sun  - 6 train, green            */
+  --line-n:  #FCCC0A;      /* Mon  - N/Q/R/W, yellow           */
+  --alert:   #FF6319;      /* B/D/F/M orange - conflicts only  */
+
+  --font: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  --pad: 16px;
+  --rail-x: 34px;          /* x-centre of the timeline rail    */
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --nav-h: 58px;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--ink);
+  color:var(--paper);
+  font-family:var(--font);
+  font-size:15px;
+  line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:inherit}
+
+/* tabular figures everywhere a time or number appears */
+.num,time,.clock,input[type=time],input[type=number]{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:'tnum' 1;
+}
+
+::-webkit-scrollbar{width:0;height:0}
+
+/* ============================================================
+   APP FRAME
+   ============================================================ */
+#app{
+  max-width:560px;
+  margin:0 auto;
+  min-height:100dvh;
+  position:relative;
+  background:var(--ink);
+  padding-bottom:calc(var(--nav-h) + var(--safe-b) + 8px);
+}
+
+/* ---------- SIGNATURE: platform countdown strip ------------ */
+.platform{
+  position:sticky; top:0; z-index:60;
+  background:var(--ink);
+  border-bottom:1px solid var(--ink-3);
+  padding:10px var(--pad) 11px;
+}
+.platform-top{
+  display:flex; align-items:center; gap:9px;
+  font-size:10px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--paper-mute);
+}
+.platform-top .clock{margin-left:auto;color:var(--paper-dim);letter-spacing:.06em}
+.platform-main{display:flex;align-items:center;gap:12px;margin-top:8px}
+.platform-dest{min-width:0;flex:1}
+.platform-dest .eyebrow{
+  font-size:9px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--paper-mute);
+}
+.platform-dest .name{
+  font-size:19px;font-weight:800;letter-spacing:-.022em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
+}
+.platform-eta{
+  text-align:right;line-height:1;flex:none;
+}
+.platform-eta .big{
+  font-size:34px;font-weight:900;letter-spacing:-.05em;
+  color:var(--line-n);display:block;
+}
+.platform-eta .unit{
+  font-size:9px;font-weight:800;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--paper-mute);
+}
+.platform.is-now .platform-eta .big{color:var(--line-6)}
+.platform.is-late .platform-eta .big{color:var(--alert)}
+.platform-go{
+  display:flex;gap:8px;margin-top:10px;
+}
+.platform-go button{
+  flex:1;padding:9px 10px;border-radius:3px;
+  font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+  background:var(--ink-2);color:var(--paper);border:1px solid var(--ink-3);
+}
+.platform-go button.primary{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.platform-go button:active{transform:translateY(1px)}
+
+/* ---------- route bullet ----------------------------------- */
+.bullet{
+  flex:none;display:inline-grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;
+  font-size:13px;font-weight:800;letter-spacing:-.02em;
+  color:#fff;background:var(--paper-mute);
+}
+.bullet.sm{width:19px;height:19px;font-size:10px}
+.bullet.lg{width:34px;height:34px;font-size:17px}
+.bullet[data-fg="dark"]{color:#0B0B0C}
+
+/* ---------- day selector ----------------------------------- */
+.days{
+  display:flex;gap:7px;padding:12px var(--pad);
+  overflow-x:auto;scrollbar-width:none;
+  border-bottom:1px solid var(--ink-3);
+}
+.day-chip{
+  flex:none;display:flex;align-items:center;gap:8px;
+  padding:7px 13px 7px 7px;border-radius:100px;
+  background:var(--ink-2);border:1px solid var(--ink-3);
+  transition:background .15s,border-color .15s;
+}
+.day-chip .lbl{text-align:left;line-height:1.15}
+.day-chip .lbl b{display:block;font-size:12.5px;font-weight:700;letter-spacing:-.01em}
+.day-chip .lbl span{display:block;font-size:10px;color:var(--paper-mute);font-weight:600}
+.day-chip[aria-selected="true"]{background:#fff;border-color:#fff}
+.day-chip[aria-selected="true"] .lbl b{color:var(--ink)}
+.day-chip[aria-selected="true"] .lbl span{color:#55585C}
+
+/* ---------- day header ------------------------------------- */
+.day-head{padding:16px var(--pad) 4px}
+.day-head h1{
+  margin:0;font-size:26px;font-weight:900;letter-spacing:-.035em;
+}
+.day-meta{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;
+}
+.tag{
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 8px;border-radius:3px;background:var(--ink-2);color:var(--paper-dim);
+  border:1px solid var(--ink-3);
+}
+.tag.warn{background:rgba(255,99,25,.13);border-color:rgba(255,99,25,.4);color:var(--alert)}
+
+/* ============================================================
+   TIMELINE RAIL
+   The rail is a line diagram: dots are stops, the segments
+   between them are the travel legs, labelled with mode + time.
+   ============================================================ */
+.rail{position:relative;padding:14px 0 26px}
+.rail::before{
+  content:'';position:absolute;left:var(--rail-x);top:26px;bottom:34px;
+  width:4px;margin-left:-2px;border-radius:2px;
+  background:var(--day-color,#555);opacity:.34;
+}
+
+.stop{position:relative;padding:0 var(--pad) 0 60px;margin-bottom:2px}
+.stop-dot{
+  position:absolute;left:var(--rail-x);top:16px;transform:translateX(-50%);
+  width:15px;height:15px;border-radius:50%;
+  background:var(--ink);border:4px solid var(--day-color,#555);
+  z-index:2;
+}
+.stop.fixed .stop-dot{
+  background:var(--day-color,#555);
+  box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--day-color,#555);
+}
+.stop.done .stop-dot{opacity:.35}
+.stop.now .stop-dot{
+  background:var(--paper);border-color:var(--paper);
+  box-shadow:0 0 0 4px rgba(242,242,240,.18);
+}
+
+.card{
+  background:var(--ink-2);border:1px solid var(--ink-3);
+  border-radius:6px;padding:12px 13px;position:relative;
+}
+.stop.now .card{border-color:var(--paper);background:#1D1F22}
+.stop.done .card{opacity:.45}
+.card-top{display:flex;align-items:baseline;gap:9px}
+.card-time{
+  font-size:14px;font-weight:800;letter-spacing:-.02em;flex:none;
+  color:var(--day-color,#fff);
+}
+.card.is-flex .card-time{color:var(--paper-dim)}
+.card-title{
+  font-size:15.5px;font-weight:700;letter-spacing:-.018em;flex:1;min-width:0;
+}
+.card-dur{font-size:10.5px;font-weight:700;color:var(--paper-mute);flex:none}
+.card-sub{
+  font-size:12.5px;color:var(--paper-dim);margin-top:4px;
+  display:flex;flex-wrap:wrap;gap:4px 10px;
+}
+.card-note{
+  font-size:12.5px;color:var(--paper-dim);margin-top:7px;line-height:1.45;
+}
+.card-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chip{
+  font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  padding:4px 7px;border-radius:3px;border:1px solid var(--ink-3);
+  background:#0F1113;color:var(--paper-dim);
+}
+.chip.conf{border-color:#2E5F3A;color:#67C486;background:rgba(0,147,60,.1)}
+.chip.money{border-color:#7A5A1B;color:#E4B23C;background:rgba(252,204,10,.08)}
+.chip.pizza{border-color:#7A2B1B;color:#FF8A5B;background:rgba(255,99,25,.09)}
+.card-acts{display:flex;gap:7px;margin-top:11px}
+.card-acts button{
+  flex:1;padding:8px;border-radius:4px;border:1px solid var(--ink-3);
+  background:#0F1113;color:var(--paper);
+  font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+}
+.card-acts button.go{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.card-acts button:active{transform:translateY(1px)}
+
+/* ---------- travel leg (the segment between two stops) ------ */
+.leg{
+  position:relative;padding:9px var(--pad) 9px 60px;
+  min-height:44px;display:flex;align-items:center;
+}
+.leg-line{
+  position:absolute;left:var(--rail-x);top:0;bottom:0;width:4px;
+  margin-left:-2px;background:var(--day-color,#555);opacity:.34;
+}
+.leg-mode{
+  position:absolute;left:var(--rail-x);top:50%;transform:translate(-50%,-50%);
+  width:22px;height:22px;border-radius:50%;
+  background:var(--ink);border:1px solid var(--ink-3);
+  display:grid;place-items:center;z-index:2;
+}
+.leg-mode svg{width:12px;height:12px;fill:var(--paper-dim)}
+.leg-body{
+  font-size:11.5px;font-weight:600;color:var(--paper-mute);
+  letter-spacing:.01em;line-height:1.35;
+}
+.leg-body b{color:var(--paper-dim);font-weight:700}
+.leg-body .lines{display:inline-flex;gap:3px;vertical-align:-4px;margin:0 3px}
+.leg.tight .leg-mode{border-color:var(--alert)}
+.leg.tight .leg-mode svg{fill:var(--alert)}
+.leg.tight .leg-body{color:var(--alert)}
+.leg.tight .leg-body b{color:var(--alert)}
+
+/* ---------- gap in the schedule ---------------------------- */
+.gap{
+  position:relative;padding:10px var(--pad) 10px 60px;
+}
+.gap-line{
+  position:absolute;left:var(--rail-x);top:0;bottom:0;width:4px;margin-left:-2px;
+  background:repeating-linear-gradient(180deg,var(--day-color,#555) 0 5px,transparent 5px 11px);
+  opacity:.45;
+}
+.gap button{
+  width:100%;text-align:left;padding:9px 11px;border-radius:5px;
+  border:1px dashed var(--ink-3);background:transparent;color:var(--paper-mute);
+  font-size:11.5px;font-weight:700;letter-spacing:.05em;
+}
+.gap button:hover{border-color:var(--paper-mute);color:var(--paper-dim)}
+
+/* ============================================================
+   MAP
+   ============================================================ */
+#mapwrap{position:relative;height:calc(100dvh - var(--nav-h) - var(--safe-b) - 118px)}
+#map{position:absolute;inset:0;background:#111}
+.leaflet-container{background:#111;font-family:var(--font)}
+.map-legend{
+  position:absolute;left:10px;bottom:10px;z-index:500;
+  background:rgba(11,11,12,.9);border:1px solid var(--ink-3);border-radius:5px;
+  padding:8px 10px;display:flex;flex-direction:column;gap:6px;
+}
+.map-legend div{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;color:var(--paper-dim)}
+.pin{
+  display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  color:#fff;font-size:11px;font-weight:800;border:2px solid var(--ink);
+  box-shadow:0 1px 6px rgba(0,0,0,.6);
+}
+.leaflet-popup-content-wrapper{background:var(--ink-2);color:var(--paper);border-radius:5px}
+.leaflet-popup-tip{background:var(--ink-2)}
+.leaflet-popup-content{margin:11px 13px;font-size:13px}
+.leaflet-popup-content b{font-size:14px;letter-spacing:-.01em}
+.leaflet-popup-content a{color:var(--line-n);font-weight:700;text-decoration:none}
+.leaflet-bar a{background:var(--ink-2);color:var(--paper);border-color:var(--ink-3)}
+
+/* ============================================================
+   PANELS (vault / setup)
+   ============================================================ */
+.panel{padding:18px var(--pad) 8px}
+.panel h2{
+  margin:0 0 3px;font-size:11px;font-weight:800;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--paper-mute);
+}
+.panel h3{
+  margin:26px 0 10px;font-size:19px;font-weight:900;letter-spacing:-.03em;
+}
+.panel h3:first-of-type{margin-top:14px}
+.panel p{font-size:13px;color:var(--paper-dim);line-height:1.5;margin:0 0 12px}
+
+.row{
+  display:flex;align-items:center;gap:11px;
+  padding:12px 13px;background:var(--ink-2);border:1px solid var(--ink-3);
+  border-radius:6px;margin-bottom:7px;
+}
+.row .rmain{flex:1;min-width:0}
+.row .rmain b{display:block;font-size:14px;font-weight:700;letter-spacing:-.015em}
+.row .rmain span{display:block;font-size:11.5px;color:var(--paper-mute);margin-top:2px}
+.row .rval{
+  font-size:13px;font-weight:800;letter-spacing:.02em;flex:none;
+  padding:6px 9px;border-radius:4px;background:#0F1113;border:1px solid var(--ink-3);
+}
+.row button.copy{
+  flex:none;padding:7px 10px;border-radius:4px;background:#0F1113;
+  border:1px solid var(--ink-3);font-size:10px;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--paper-dim);
+}
+
+/* money meter */
+.meter{height:9px;border-radius:5px;background:var(--ink-3);overflow:hidden;margin:10px 0 7px;display:flex}
+.meter i{display:block;height:100%}
+.meter i.used{background:var(--line-n)}
+.meter i.over{background:var(--alert)}
+.money-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}
+.money-cell{
+  background:var(--ink-2);border:1px solid var(--ink-3);border-radius:6px;padding:11px 12px;
+}
+.money-cell span{
+  display:block;font-size:9.5px;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--paper-mute);
+}
+.money-cell b{display:block;font-size:22px;font-weight:900;letter-spacing:-.04em;margin-top:5px}
+.money-cell.good b{color:var(--line-6)}
+.money-cell.warn b{color:var(--alert)}
+
+/* pizza scorecard */
+.slice{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:6px;padding:12px 13px;margin-bottom:8px}
+.slice-head{display:flex;align-items:baseline;gap:9px}
+.slice-head b{font-size:14.5px;font-weight:700;letter-spacing:-.015em;flex:1}
+.slice-head .avg{font-size:24px;font-weight:900;letter-spacing:-.045em;color:var(--alert)}
+.slice-head .avg.empty{color:var(--ink-3)}
+.raters{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}
+.rater{text-align:center}
+.rater span{
+  display:block;font-size:9.5px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--paper-mute);margin-bottom:4px;
+}
+.rater input{
+  width:100%;text-align:center;padding:7px 2px;border-radius:4px;
+  background:#0F1113;border:1px solid var(--ink-3);color:var(--paper);
+  font-size:15px;font-weight:800;
+}
+
+/* generic buttons */
+.btn{
+  display:block;width:100%;padding:13px;border-radius:5px;margin-bottom:8px;
+  background:var(--ink-2);border:1px solid var(--ink-3);color:var(--paper);
+  font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+}
+.btn.solid{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.btn.danger{color:var(--alert);border-color:rgba(255,99,25,.35)}
+.btn:active{transform:translateY(1px)}
+.btn-pair{display:flex;gap:8px}
+.btn-pair .btn{margin-bottom:8px}
+
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;
+  height:calc(var(--nav-h) + var(--safe-b));
+  padding-bottom:var(--safe-b);
+  background:rgba(11,11,12,.94);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-top:1px solid var(--ink-3);
+  display:flex;
+}
+nav button{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--paper-mute);
+}
+nav button svg{width:20px;height:20px;fill:currentColor}
+nav button span{font-size:9px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+nav button[aria-current="page"]{color:var(--paper)}
+
+/* ============================================================
+   SHEET (add / edit)
+   ============================================================ */
+.scrim{
+  position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.66);
+  opacity:0;pointer-events:none;transition:opacity .18s;
+}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:90;
+  max-width:560px;margin:0 auto;
+  max-height:92dvh;overflow-y:auto;
+  background:var(--ink-2);border-top:1px solid var(--ink-3);
+  border-radius:14px 14px 0 0;
+  padding:8px var(--pad) calc(20px + var(--safe-b));
+  transform:translateY(101%);transition:transform .24s cubic-bezier(.32,.72,0,1);
+}
+.sheet.open{transform:translateY(0)}
+.grabber{width:36px;height:4px;border-radius:2px;background:var(--ink-3);margin:6px auto 14px}
+.sheet h3{margin:0 0 16px;font-size:20px;font-weight:900;letter-spacing:-.03em}
+.field{margin-bottom:12px}
+.field label{
+  display:block;font-size:9.5px;font-weight:800;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--paper-mute);margin-bottom:5px;
+}
+.field input,.field select,.field textarea{
+  width:100%;padding:11px 12px;border-radius:5px;
+  background:#0F1113;border:1px solid var(--ink-3);color:var(--paper);
+  font-size:15px;
+}
+.field textarea{min-height:64px;resize:vertical;font-size:14px;line-height:1.45}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:2px solid var(--paper);outline-offset:1px;border-color:transparent;
+}
+.field-pair{display:flex;gap:10px}
+.field-pair .field{flex:1}
+.hint{font-size:11px;color:var(--paper-mute);margin-top:5px;line-height:1.4}
+
+/* library picker */
+.lib{max-height:230px;overflow-y:auto;border:1px solid var(--ink-3);border-radius:5px}
+.lib button{
+  display:block;width:100%;text-align:left;padding:10px 12px;
+  border-bottom:1px solid var(--ink-3);font-size:13.5px;font-weight:600;
+}
+.lib button:last-child{border-bottom:0}
+.lib button small{display:block;font-size:11px;color:var(--paper-mute);font-weight:500;margin-top:2px}
+.lib button:hover,.lib button:focus{background:#0F1113}
+
+/* toast */
+#toast{
+  position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);
+  transform:translate(-50%,14px);z-index:120;
+  background:var(--paper);color:var(--ink);
+  padding:10px 16px;border-radius:100px;
+  font-size:12px;font-weight:800;letter-spacing:.05em;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  max-width:90vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+.view{display:none}
+.view.active{display:block}
+
+.empty{
+  padding:40px var(--pad);text-align:center;color:var(--paper-mute);
+  font-size:13px;line-height:1.5;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+@media print{
+  nav,.platform-go,.card-acts,.days,#mapwrap,.gap{display:none!important}
+  body,#app{background:#fff;color:#000}
+  .card,.row{background:#fff;border-color:#bbb;break-inside:avoid}
+  .view{display:block!important}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== SIGNATURE: platform countdown strip ===== -->
+  <header class="platform" id="platform">
+    <div class="platform-top">
+      <span id="pf-status">Next stop</span>
+      <span class="clock" id="pf-clock">--:--</span>
+    </div>
+    <div class="platform-main">
+      <span class="bullet lg" id="pf-bullet">7</span>
+      <div class="platform-dest">
+        <div class="eyebrow" id="pf-eyebrow">Friday</div>
+        <div class="name" id="pf-name">Loading trip…</div>
+      </div>
+      <div class="platform-eta">
+        <span class="big num" id="pf-eta">--</span>
+        <span class="unit" id="pf-unit">min</span>
+      </div>
+    </div>
+    <div class="platform-go">
+      <button class="primary" id="pf-nav">Navigate</button>
+      <button id="pf-where">Where am I?</button>
+    </div>
+  </header>
+
+  <!-- ===== TRIP VIEW ===== -->
+  <section class="view active" id="view-trip">
+    <div class="days" id="days" role="tablist"></div>
+    <div class="day-head">
+      <h1 id="day-title">—</h1>
+      <div class="day-meta" id="day-meta"></div>
+    </div>
+    <div class="rail" id="rail"></div>
+  </section>
+
+  <!-- ===== MAP VIEW ===== -->
+  <section class="view" id="view-map">
+    <div class="days" id="days-map" role="tablist"></div>
+    <div id="mapwrap">
+      <div id="map"></div>
+      <div class="map-legend" id="map-legend"></div>
+    </div>
+  </section>
+
+  <!-- ===== VAULT VIEW ===== -->
+  <section class="view" id="view-vault">
+    <div class="panel" id="vault-body"></div>
+  </section>
+
+  <!-- ===== SETUP VIEW ===== -->
+  <section class="view" id="view-setup">
+    <div class="panel" id="setup-body"></div>
+  </section>
+
+  <nav>
+    <button data-view="trip" aria-current="page">
+      <svg viewBox="0 0 24 24"><path d="M4 3h16v2H4zm0 5h16v2H4zm0 5h10v2H4zm0 5h10v2H4z"/></svg>
+      <span>Trip</span>
+    </button>
+    <button data-view="map">
+      <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg>
+      <span>Map</span>
+    </button>
+    <button data-view="vault">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6A5 5 0 007 6v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2zM9 6a3 3 0 016 0v2H9zm3 11a2 2 0 112-2 2 2 0 01-2 2z"/></svg>
+      <span>Vault</span>
+    </button>
+    <button data-view="setup">
+      <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 104 4 4 4 0 00-4-4zm9 4a8.6 8.6 0 00-.1-1.2l2-1.6-2-3.4-2.4 1a8.7 8.7 0 00-2-1.2L16 3H8l-.4 2.6a8.7 8.7 0 00-2 1.2l-2.4-1-2 3.4 2 1.6a8.9 8.9 0 000 2.4l-2 1.6 2 3.4 2.4-1a8.7 8.7 0 002 1.2L8 21h8l.4-2.6a8.7 8.7 0 002-1.2l2.4 1 2-3.4-2-1.6A8.6 8.6 0 0021 12z"/></svg>
+      <span>Setup</span>
+    </button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grabber"></div><div id="sheet-body"></div></div>
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+/* ===========================================================================
+   O'GARA / NYC  —  trip companion
+   Aug 14–17, 2026
+
+   No API keys. No build step. No backend.
+   - Map tiles:    OpenStreetMap via Leaflet (free, keyless)
+   - Navigation:   deep-links out to Google / Apple Maps, which is where the
+                   real turn-by-turn GPS lives. Nothing in a browser tab
+                   competes with a native maps app for that.
+   - Weather:      Open-Meteo (free, keyless)
+   - Storage:      localStorage, with export/import for sharing edits.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. THE TRIP
+   Every stop carries real coordinates so the routing engine can do its job.
+   `fixed: true` means the time cannot move (flights, curtain, timed entry).
+   --------------------------------------------------------------------------- */
+
+const TRIP_VERSION = 8;
+
+const DAYS = [
+  { id:'fri', date:'2026-08-14', label:'Friday',   short:'Fri 14', line:'7', color:'#B933AD', fg:'light',
+    caption:'Arrive, Midtown east-to-west, Empire State after dark' },
+  { id:'sat', date:'2026-08-15', label:'Saturday', short:'Sat 15', line:'1', color:'#EE352E', fg:'light',
+    caption:'Harbor and downtown all day, Broadway at seven' },
+  { id:'sun', date:'2026-08-16', label:'Sunday',   short:'Sun 16', line:'6', color:'#00933C', fg:'light',
+    caption:'Bagels, pizza, and the long walk from Nolita to Union Square' },
+  { id:'mon', date:'2026-08-17', label:'Monday',   short:'Mon 17', line:'N', color:'#FCCC0A', fg:'dark',
+    caption:'Central Park, Rockefeller, Fifth Avenue, then home' }
+];
+
+const BASE_ITEMS = [
+  /* ---------------------------- FRIDAY ---------------------------------- */
+  { id:'f1', day:'fri', start:'13:11', dur:45, cat:'air', fixed:true,
+    title:'Land at LaGuardia', place:'LaGuardia Airport, Terminal C',
+    lat:40.7769, lng:-73.8740, conf:'GI7IPB',
+    note:'DL 4883 from Indianapolis. Bags plus the ride into Midtown realistically puts you at the hotel around 3:00.' },
+
+  { id:'f2', day:'fri', start:'15:00', dur:30, cat:'hotel', fixed:true,
+    title:'Check in — Hard Rock Hotel', place:'159 W 48th St',
+    lat:40.7594, lng:-73.9840, conf:'73450836993472',
+    note:'Drop bags and go. Everything today is within a 15-minute walk of this front door.' },
+
+  { id:'f3', day:'fri', start:'17:30', dur:20, cat:'sight',
+    title:'Grand Central Terminal', place:'89 E 42nd St',
+    lat:40.7527, lng:-73.9772,
+    note:'Main Concourse ceiling, then the Whispering Gallery outside the Oyster Bar — stand in opposite corners of the arch and talk into the tile.' },
+
+  { id:'f4', day:'fri', start:'18:05', dur:25, cat:'sight',
+    title:'Tudor City Overpass — Chrysler & the UN', place:'E 42nd St at Tudor City Place',
+    lat:40.7495, lng:-73.9711,
+    note:'The single best exterior view of the Chrysler Building anywhere. Standing at its base on Lexington you cannot actually see the crown — from this overpass you look straight west down 42nd Street and the whole spire lines up over the traffic. Then walk down the stairs to Ralph Bunche Park at First Ave and the UN Secretariat with its row of member flags is directly across the street. Two walk-bys, one stop, twenty-five minutes.' },
+
+  { id:'f5', day:'fri', start:'17:00', dur:20, cat:'sight',
+    title:'Bryant Park & the Library steps', place:'Fifth Ave at 41st St',
+    lat:40.7532, lng:-73.9822,
+    note:'Patience and Fortitude on the steps, the park behind. Since you are staying outside, the closing time stops mattering — the facade is lit and the lawn is full on a August evening.' },
+
+  { id:'f6', day:'fri', start:'15:45', dur:20, cat:'sight',
+    title:'Times Square', place:'Duffy Square red steps',
+    lat:40.7590, lng:-73.9845,
+    note:'Go up the red steps for the photo looking south down Broadway.' },
+
+  { id:'f7', day:'fri', start:'16:15', dur:30, cat:'view', book:true,
+    title:'One Times Square Skywalk', place:'1475 Broadway',
+    lat:40.7565, lng:-73.9861, url:'https://onetimessquare.com',
+    note:'This is where the ball drops. Glass elevator to a 360° deck on the 19th floor, and the New Year\'s Eve ball is right there. Timed 30-minute slots — book this before you leave Indiana.' },
+
+  { id:'f8', day:'fri', start:'19:00', dur:60, cat:'food', inkind:true, cost:170,
+    title:'Dinner — Zaytinya', place:'1185 Broadway',
+    lat:40.7452, lng:-73.9884,
+    note:'Eastern Mediterranean small plates, José Andrés. On inKind, and it sits six blocks below the Empire State so you walk straight to your 8:15 entry.' },
+
+  { id:'f9', day:'fri', start:'20:15', dur:75, cat:'view', fixed:true,
+    title:'Empire State Building', place:'20 W 34th St — 86th floor',
+    lat:40.7484, lng:-73.9857, conf:'4SKS7RAR', url:'https://esbnyc.com',
+    note:'At night, with the Chrysler crown glowing to the east. Far better after dark than in daylight.' },
+
+  /* --------------------------- SATURDAY --------------------------------- */
+  { id:'s1', day:'sat', start:'08:15', dur:45, cat:'sight',
+    title:'Battery Park — ferry security', place:'Castle Clinton, Battery Park',
+    lat:40.7033, lng:-74.0170,
+    note:'Screening runs like an airport and it is the one thing that can cost you the boat. Leave the hotel by 8:15 to be screened comfortably before 9:30.' },
+
+  { id:'s2', day:'sat', start:'09:30', dur:135, cat:'sight', fixed:true,
+    title:'Statue of Liberty — Pedestal', place:'Liberty Island',
+    lat:40.6892, lng:-74.0445, conf:'i81468109',
+    note:'Booking 81468106, Pedestal Reserve. Be on the upper deck for the approach. Pedestal climb plus the museum is about two hours well spent.' },
+
+  { id:'s3', day:'sat', start:'12:05', dur:60, cat:'museum',
+    title:'Ellis Island', place:'Ellis Island National Museum of Immigration',
+    lat:40.6995, lng:-74.0397,
+    note:'Included in the same ticket and the sleeper hit of the day. If anyone is flagging by 1:00, this is the thing to cut.' },
+
+  { id:'s4', day:'sat', start:'13:45', dur:30, cat:'sight',
+    title:'Charging Bull & Bowling Green', place:'Broadway at Bowling Green',
+    lat:40.7056, lng:-74.0134,
+    note:'A short walk up from the ferry landing. Fearless Girl now stands across from the Stock Exchange, not here.' },
+
+  { id:'s5', day:'sat', start:'14:25', dur:25, cat:'sight',
+    title:'Wall Street & Federal Hall', place:'Wall St at Broad St',
+    lat:40.7069, lng:-74.0113,
+    note:'The Exchange facade, Federal Hall steps where Washington was sworn in, and Fearless Girl.' },
+
+  { id:'s6', day:'sat', start:'15:05', dur:40, cat:'sight',
+    title:'9/11 Memorial pools', place:'180 Greenwich St',
+    lat:40.7115, lng:-74.0134, url:'https://911memorial.org',
+    note:'The pools are free and outdoors. The museum below needs two hours you do not have today — if you want it, it has to replace Ellis Island this morning.' },
+
+  { id:'s7', day:'sat', start:'15:55', dur:15, cat:'sight',
+    title:"St. Paul's Chapel", place:'209 Broadway',
+    lat:40.7110, lng:-74.0092,
+    note:'Oldest church building in Manhattan, and it survived the towers falling a block away. Five minutes, and worth them.' },
+
+  { id:'s8', day:'sat', start:'16:20', dur:30, cat:'shop',
+    title:'The Oculus & Westfield WTC', place:'185 Greenwich St',
+    lat:40.7113, lng:-74.0110,
+    note:'Real shopping inside a Calatrava landmark, and the E train home starts right underneath it.' },
+
+  { id:'s8b', day:'sat', start:'17:10', dur:15, cat:'sight',
+    title:'Hook & Ladder 8 — the Ghostbusters firehouse', place:'14 North Moore St, Tribeca',
+    lat:40.7195, lng:-74.0067,
+    note:'The actual exterior from both films, and still a working FDNY house — so it is a sidewalk photo, not a walk-in. The Ghostbusters logo is painted on the apron out front. Best part: it costs you nothing today. It sits on the walk between the Oculus and the 1 train at Franklin St, which runs straight up to 50th St for dinner.' },
+
+  { id:'s9', day:'sat', start:'17:45', dur:60, cat:'food', inkind:true, cost:180, offer:true,
+    title:'Dinner — Oceana', place:'120 W 49th St',
+    lat:40.7595, lng:-73.9820,
+    note:'Upscale seafood, four blocks from the Marquis, and they know what a 7:00 curtain means. Use the $50-off-$150 offer on this bill.' },
+
+  { id:'s10', day:'sat', start:'19:00', dur:170, cat:'show', fixed:true,
+    title:'Stranger Things: The First Shadow', place:'Marquis Theatre, 210 W 46th St',
+    lat:40.7590, lng:-73.9866, conf:'T072526056764',
+    note:'Roughly 2h50 with intermission, so you are out around 9:50 — not 9:00. Four Tony Awards for its stagecraft, and it is set in Hawkins, Indiana, which will land differently for your table than for most of the house.' },
+
+  { id:'s11', day:'sat', start:'22:05', dur:30, cat:'pizza',
+    title:"Late slice — Joe's Pizza", place:'1435 Broadway at 40th',
+    lat:40.7549, lng:-73.9868,
+    note:'Open late, five minutes from the theatre. The reference-standard New York slice — good calibration bite before the real hunting starts tomorrow.' },
+
+  /* ---------------------------- SUNDAY ---------------------------------- */
+  { id:'u1', day:'sun', start:'08:30', dur:50, cat:'bagel',
+    title:"Russ & Daughters", place:'179 E Houston St',
+    lat:40.7226, lng:-73.9882,
+    note:'Appetizing shop since 1914, hand-sliced nova, and the counter theatre is half the reason to go. This is the bagel morning for your wife and daughter. Ess-a-Bagel is the alternate if you want the big overstuffed Midtown version instead.' },
+
+  { id:'u2', day:'sun', start:'09:40', dur:25, cat:'sight',
+    title:'Elizabeth Street Garden', place:'209 Elizabeth St, Nolita',
+    lat:40.7229, lng:-73.9944,
+    note:'A sculpture garden wedged into a Nolita block. Two minutes of quiet before the shopping starts.' },
+
+  { id:'u3', day:'sun', start:'10:15', dur:35, cat:'pizza', inkind:true, cost:30,
+    title:'Prince Street Pizza', place:'27 Prince St',
+    lat:40.7233, lng:-73.9945,
+    note:'You already know. Spicy Spring square. It is on inKind, so put it on the app.' },
+
+  { id:'u4', day:'sun', start:'11:00', dur:40, cat:'pizza', optional:true, book:true,
+    title:'Ceres', place:'164 Mott St',
+    lat:40.7203, lng:-73.9958,
+    note:'Portnoy gave it a 9.2 — one of the highest scores he has handed out in years. Eleven Madison Park alumni, sourdough base, whole pies only, sells out daily. Reserve a pickup slot online in advance or skip it. Closed Mondays and Tuesdays.' },
+
+  { id:'u5', day:'sun', start:'11:50', dur:85, cat:'shop',
+    title:'SoHo shopping', place:'Broadway & Prince St',
+    lat:40.7246, lng:-73.9977,
+    note:'Broadway is the chains. The good stuff is on the cobblestones — Mercer, Greene, Wooster.' },
+
+  { id:'u6', day:'sun', start:'13:30', dur:25, cat:'park',
+    title:'Washington Square Park', place:'Washington Square Arch',
+    lat:40.7308, lng:-73.9973,
+    note:'Chess tables, buskers, the arch. Cut through and keep walking west into the Village.' },
+
+  { id:'u7', day:'sun', start:'14:10', dur:70, cat:'pizza',
+    title:"John's of Bleecker Street", place:'278 Bleecker St',
+    lat:40.7317, lng:-74.0035,
+    note:'Coal-fired, whole pies only, no slices, same ovens since 1929. A late lunch means you walk past the line instead of standing in it.' },
+
+  { id:'u8', day:'sun', start:'15:40', dur:55, cat:'shop',
+    title:'Barnes & Noble — Union Square', place:'33 E 17th St',
+    lat:40.7370, lng:-73.9906,
+    note:'This is the one. Since the old Fifth Avenue flagship closed in 2014, Union Square has been the largest store in the chain.' },
+
+  { id:'u9', day:'sun', start:'16:45', dur:40, cat:'shop',
+    title:'The Strand', place:'828 Broadway',
+    lat:40.7333, lng:-73.9909,
+    note:'Two blocks south. Eighteen miles of books, and honestly the better bookstore of the two. Do both.' },
+
+  { id:'u10', day:'sun', start:'17:45', dur:90, cat:'food', optional:true,
+    title:'Dinner — Gramercy Tavern', place:'42 E 20th St',
+    lat:40.7387, lng:-73.9884,
+    note:'Three blocks from the Strand and a proper last real dinner. This one is cash — your inKind credits are fully committed elsewhere. If you would rather spend them here, drop Monday breakfast at Sarabeth\'s and eat near the hotel instead. After a day of pizza you may also just want a light room-service night, which is a perfectly good answer.' },
+
+  /* ---------------------------- MONDAY ---------------------------------- */
+  { id:'m1', day:'mon', start:'08:30', dur:60, cat:'food', inkind:true, cost:120,
+    title:"Breakfast — Sarabeth's", place:'40 Central Park South',
+    lat:40.7654, lng:-73.9760,
+    note:'On inKind, and it puts you at the bottom edge of the park with your last credits spent.' },
+
+  { id:'m2', day:'mon', start:'09:40', dur:55, cat:'park',
+    title:'Central Park stroll', place:'The Pond & Gapstow Bridge',
+    lat:40.7669, lng:-73.9740,
+    note:'In at Grand Army Plaza, down to the Pond, over Gapstow Bridge with the skyline behind it. Push north to Bethesda Terrace if the legs are willing.' },
+
+  { id:'m3', day:'mon', start:'11:00', dur:25, cat:'hotel', fixed:true,
+    title:'Check out — bags stored', place:'Hard Rock Hotel, 159 W 48th St',
+    lat:40.7594, lng:-73.9840,
+    note:'Leave the luggage with the bell desk. You come back for it around 2:00.' },
+
+  { id:'m4', day:'mon', start:'11:35', dur:55, cat:'sight',
+    title:'Rockefeller Plaza', place:'30 Rockefeller Plaza',
+    lat:40.7587, lng:-73.9787,
+    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens. Top of the Rock is here if you want a second deck — it is the better view of the two because the Empire State is in it.' },
+
+  { id:'m5', day:'mon', start:'12:45', dur:60, cat:'shop',
+    title:'Fifth Avenue', place:"St. Patrick's to the Apple Cube",
+    lat:40.7600, lng:-73.9750,
+    note:"St. Patrick's Cathedral, Saks, Bergdorf, the glass Apple Cube at 59th. Walk it north and you end up back at the park." },
+
+  { id:'m6', day:'mon', start:'14:00', dur:30, cat:'hotel', fixed:true,
+    title:'Collect bags, order the car', place:'Hard Rock Hotel, 159 W 48th St',
+    lat:40.7594, lng:-73.9840,
+    note:'Wheels rolling by 2:30 at the latest. Monday afternoon traffic to LaGuardia is the least forgiving ride of the trip and there is no version of this where leaving later works out.' },
+
+  { id:'m7', day:'mon', start:'15:30', dur:60, cat:'air', fixed:true,
+    title:'LaGuardia — bags and security', place:'LGA Terminal C',
+    lat:40.7769, lng:-73.8740,
+    note:'Terminal C is Delta. Two hours before a domestic departure is the comfortable number.' },
+
+  { id:'m8', day:'mon', start:'17:45', dur:0, cat:'air', fixed:true,
+    title:'DL 5653 — LGA to Indianapolis', place:'LaGuardia Airport',
+    lat:40.7769, lng:-73.8740, conf:'GI7IPB',
+    note:'Arrives IND 8:27pm.' }
+];
+
+/* Quick-add library — coordinates baked in so adding a stop needs no geocoder */
+const LIBRARY = [
+  { title:'Top of the Rock',            place:'30 Rockefeller Plaza',      lat:40.7593, lng:-73.9790, cat:'view',   dur:75 },
+  { title:'Edge observation deck',      place:'30 Hudson Yards',           lat:40.7538, lng:-74.0009, cat:'view',   dur:75 },
+  { title:'Summit One Vanderbilt',      place:'45 E 42nd St',              lat:40.7527, lng:-73.9787, cat:'view',   dur:90 },
+  { title:'9/11 Memorial Museum',       place:'180 Greenwich St',          lat:40.7115, lng:-74.0134, cat:'museum', dur:120 },
+  { title:'The Metropolitan Museum',    place:'1000 Fifth Ave',            lat:40.7794, lng:-73.9632, cat:'museum', dur:150 },
+  { title:'MoMA',                       place:'11 W 53rd St',              lat:40.7614, lng:-73.9776, cat:'museum', dur:120 },
+  { title:'Intrepid Museum',            place:'Pier 86, W 46th St',        lat:40.7645, lng:-74.0000, cat:'museum', dur:120 },
+  { title:'Brooklyn Bridge walk',       place:'Manhattan approach',        lat:40.7127, lng:-74.0040, cat:'sight',  dur:60  },
+  { title:'DUMBO — Washington St',      place:'Washington & Water St',     lat:40.7037, lng:-73.9895, cat:'sight',  dur:45  },
+  { title:'The High Line',              place:'Gansevoort St entrance',    lat:40.7396, lng:-74.0080, cat:'park',   dur:60  },
+  { title:'Chelsea Market',             place:'75 Ninth Ave',              lat:40.7424, lng:-74.0061, cat:'shop',   dur:60  },
+  { title:'Bethesda Terrace',           place:'Central Park',              lat:40.7740, lng:-73.9709, cat:'park',   dur:40  },
+  { title:'United Nations tour',        place:'801 First Ave',             lat:40.7489, lng:-73.9680, cat:'sight',  dur:90  },
+  { title:'Tudor City Overpass',      place:'E 42nd St at Tudor City Pl', lat:40.7495, lng:-73.9711, cat:'sight',  dur:25  },
+  { title:'Hook & Ladder 8',          place:'14 North Moore St',         lat:40.7195, lng:-74.0067, cat:'sight',  dur:15  },
+  { title:'Ghostbusters HQ (film)',   place:'55 Central Park West',      lat:40.7756, lng:-73.9754, cat:'sight',  dur:15  },
+  { title:'Bryant Park',                place:'Sixth Ave at 42nd',         lat:40.7536, lng:-73.9832, cat:'park',   dur:30  },
+  { title:'Ess-a-Bagel',                place:'831 Third Ave',             lat:40.7561, lng:-73.9709, cat:'bagel',  dur:40  },
+  { title:'Katz\'s Delicatessen',       place:'205 E Houston St',          lat:40.7223, lng:-73.9874, cat:'food',   dur:60  },
+  { title:'Grimaldi\'s (DUMBO)',        place:'1 Front St, Brooklyn',      lat:40.7026, lng:-73.9934, cat:'pizza',  dur:60  },
+  { title:'L\'Industrie Pizzeria',      place:'104 Christopher St',        lat:40.7333, lng:-74.0038, cat:'pizza',  dur:40  },
+  { title:'Rubirosa',                   place:'235 Mulberry St',           lat:40.7229, lng:-73.9959, cat:'pizza',  dur:70  },
+  { title:'Mama\'s Too',                place:'2750 Broadway',             lat:40.7999, lng:-73.9683, cat:'pizza',  dur:35  },
+  { title:'The Dead Rabbit',            place:'30 Water St',               lat:40.7031, lng:-74.0111, cat:'food',   dur:75  },
+  { title:'Pebble Bar',                 place:'67 W 49th St',              lat:40.7590, lng:-73.9800, cat:'food',   dur:60  },
+  { title:'Macy\'s Herald Square',      place:'151 W 34th St',             lat:40.7509, lng:-73.9891, cat:'shop',   dur:70  },
+  { title:'Grand Central Terminal',     place:'89 E 42nd St',              lat:40.7527, lng:-73.9772, cat:'sight',  dur:30  },
+  { title:'Little Island',              place:'Pier 55, Hudson River Park',lat:40.7412, lng:-74.0102, cat:'park',   dur:45  },
+  { title:'Staten Island Ferry',        place:'Whitehall Terminal',        lat:40.7013, lng:-74.0133, cat:'sight',  dur:75  }
+];
+
+/* --------------------------------------------------------------------------
+   2. GEOGRAPHY ENGINE
+   Straight-line distance is a lie in Manhattan. You walk the grid, and a
+   crosstown avenue block is roughly 750ft against 264ft for a north-south
+   street block. So walking uses taxicab distance; the subway, which does
+   go more or less straight, uses the crow line.
+   -------------------------------------------------------------------------- */
+
+const MI_PER_DEG_LAT = 69.0;
+const MI_PER_DEG_LNG = 52.44;            // at 40.75° N
+
+function legMiles(a, b){
+  const ns = Math.abs(a.lat - b.lat) * MI_PER_DEG_LAT;
+  const ew = Math.abs(a.lng - b.lng) * MI_PER_DEG_LNG;
+  return { ns, ew, grid: ns + ew, crow: Math.sqrt(ns*ns + ew*ew) };
+}
+
+function walkMinutes(a, b){
+  const { grid } = legMiles(a, b);
+  return Math.max(3, Math.round((grid / 3.0) * 60) + 2);   // 3 mph + lights
+}
+
+/* Rough zones, drawn for the neighbourhoods this trip actually touches. */
+const ZONES = [
+  { id:'air',    test:p => p.lng > -73.93 },
+  { id:'harbor', test:p => p.lat < 40.702 && p.lng < -74.03 },
+  { id:'fidi',   test:p => p.lat < 40.718 && p.lng < -73.996 },
+  { id:'soho',   test:p => p.lat < 40.730 && p.lng < -73.990 },
+  { id:'les',    test:p => p.lat < 40.732 && p.lng >= -73.990 },
+  { id:'vill',   test:p => p.lat < 40.742 && p.lng < -73.995 },
+  { id:'flat',   test:p => p.lat < 40.750 },
+  { id:'midE',   test:p => p.lng > -73.978 && p.lat < 40.764 },
+  { id:'park',   test:p => p.lat > 40.764 },
+  { id:'midW',   test:() => true }
+];
+const zoneOf = p => ZONES.find(z => z.test(p)).id;
+
+/* Corridors that actually exist between these zones. */
+const CORRIDORS = [
+  { a:'midW', b:'fidi',   lines:['1','2','3'], via:'Seventh Ave express down to Chambers or the 1 to South Ferry' },
+  { a:'midW', b:'soho',   lines:['N','R','W'], via:'Broadway local to Prince St' },
+  { a:'midW', b:'flat',   lines:['N','Q','R','W'], via:'Broadway line to Union Square' },
+  { a:'midW', b:'les',    lines:['F'],         via:'Sixth Ave line to Second Ave' },
+  { a:'midW', b:'vill',   lines:['1'],         via:'Seventh Ave local to Christopher St' },
+  { a:'midW', b:'midE',   lines:['S','7'],     via:'42nd St shuttle across to Grand Central' },
+  { a:'midW', b:'park',   lines:['N','Q','R','W'], via:'Broadway line up to 57th–Seventh' },
+  { a:'midE', b:'fidi',   lines:['4','5','6'], via:'Lexington Ave line downtown' },
+  { a:'midE', b:'flat',   lines:['4','5','6'], via:'Lexington line to 23rd or Union Square' },
+  { a:'flat', b:'soho',   lines:['6'],         via:'Lexington local to Spring St' },
+  { a:'flat', b:'fidi',   lines:['4','5'],     via:'Lexington express downtown' },
+  { a:'vill', b:'flat',   lines:['1','2','3'], via:'Seventh Ave line up to 14th St' },
+  { a:'soho', b:'fidi',   lines:['R','W'],     via:'Broadway local down to Cortlandt' },
+  { a:'les',  b:'flat',   lines:['F','M'],     via:'Sixth Ave line up to 14th St' }
+];
+
+function corridorFor(a, b){
+  const za = zoneOf(a), zb = zoneOf(b);
+  if (za === zb) return null;
+  return CORRIDORS.find(c => (c.a===za && c.b===zb) || (c.a===zb && c.b===za)) || null;
+}
+
+/* The recommendation itself. */
+function planLeg(from, to){
+  if (!from || !to) return null;
+  const d = legMiles(from, to);
+  if (d.grid < 0.02) return null;                       // same place
+
+  if (from.cat === 'air' || to.cat === 'air'){
+    return { mode:'car', min:50, detail:'Rideshare or taxi — allow an hour for LaGuardia either direction' };
+  }
+  const fh = zoneOf(from) === 'harbor', th = zoneOf(to) === 'harbor';
+  if (fh && th) return { mode:'ferry', min:15, detail:'Island-to-island hop, same ticket' };
+  if (fh || th) return { mode:'ferry', min:25, detail:'Statue City Cruises ferry, included in your ticket' };
+
+  const walk = walkMinutes(from, to);
+  const corr = corridorFor(from, to);
+  const subway = corr ? Math.round(6 + d.crow * 2.6 + 4) : null;
+
+  if (walk <= 18){
+    return { mode:'walk', min:walk,
+      detail: d.ew > d.ns * 1.6
+        ? 'Crosstown — the avenue blocks are the long ones'
+        : `About ${Math.round(d.grid*20)} blocks` };
+  }
+
+  /* Above ground in Midtown the train barely wins once you count stairs and
+     waiting, and you see nothing. Walk it. */
+  const strollable = ['midW','midE','park','flat'];
+  if (walk <= 26 && strollable.includes(zoneOf(from)) && strollable.includes(zoneOf(to))){
+    return { mode:'walk', min:walk,
+      detail:'The train barely beats this once you count the stairs — walk it' };
+  }
+
+  if (subway && subway < walk - 7){
+    return { mode:'subway', min:subway, lines:corr.lines, detail:corr.via };
+  }
+  if (d.crow > 4.5){
+    return { mode:'car', min:Math.round(8 + d.crow*4), detail:'Far enough that a car earns its keep' };
+  }
+  return { mode:'walk', min:walk, detail:'Walkable, but a cab saves you the legs' };
+}
+
+/* --------------------------------------------------------------------------
+   3. STATE
+   -------------------------------------------------------------------------- */
+
+const KEY = 'ogara-nyc-v' + TRIP_VERSION;
+let memoryOnly = false;
+
+const DEFAULT_STATE = {
+  version: TRIP_VERSION,
+  items: JSON.parse(JSON.stringify(BASE_ITEMS)),
+  credits: 350,
+  offer: 50,
+  offerMin: 150,
+  raters: ['Dad','Mom','Son','Daughter'],
+  scores: {},
+  activeDay: null
+};
+
+let S = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if (raw){
+      const parsed = JSON.parse(raw);
+      if (parsed.version === TRIP_VERSION) return parsed;
+    }
+  }catch(e){ memoryOnly = true; }
+  return JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+
+function save(){
+  if (memoryOnly) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ memoryOnly = true; }
+}
+
+/* --------------------------------------------------------------------------
+   4. HELPERS
+   -------------------------------------------------------------------------- */
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const toMin = t => { const [h,m] = String(t).split(':').map(Number); return h*60 + m; };
+const toHHMM = m => {
+  m = ((Math.round(m) % 1440) + 1440) % 1440;
+  return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+};
+const fmt = t => {
+  const m = toMin(t), h = Math.floor(m/60), mm = m%60;
+  const ap = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ':' + String(mm).padStart(2,'0') + ap;
+};
+const dayById  = id => DAYS.find(d => d.id === id);
+const itemsFor = id => S.items.filter(i => i.day === id)
+                              .sort((a,b) => toMin(a.start) - toMin(b.start));
+
+const MODE_ICON = {
+  walk:  '<path d="M13.5 5.5a2 2 0 100-4 2 2 0 000 4zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7.3 7.3 0 0019 13v-2a5.2 5.2 0 01-4.4-2.5l-1-1.6a2 2 0 00-1.7-1c-.3 0-.6 0-.9.2L5 8.3V13h2V9.6l2.8-.7z"/>',
+  subway:'<path d="M12 2C7.6 2 4 2.5 4 6v9.5A3.5 3.5 0 007.5 19L6 20.5v.5h12v-.5L16.5 19a3.5 3.5 0 003.5-3.5V6c0-3.5-3.6-4-8-4zM7.5 17a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm3.5-7H6V6h5v4zm2 0V6h5v4h-5zm3.5 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/>',
+  car:   '<path d="M18.9 5.5A1.5 1.5 0 0017.5 4.5h-11A1.5 1.5 0 005.1 5.5L3 11.5V19.5A1 1 0 004 20.5h1a1 1 0 001-1V18.5h12v1a1 1 0 001 1h1a1 1 0 001-1V11.5l-2.1-6zM6.5 15.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm11 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM5 10.5l1.5-4.5h11l1.5 4.5H5z"/>',
+  ferry: '<path d="M20 21a3.6 3.6 0 01-2.6-1.2A3.6 3.6 0 0114.8 21a3.6 3.6 0 01-2.6-1.2A3.6 3.6 0 019.6 21 3.6 3.6 0 017 19.8 3.6 3.6 0 014.4 21H2v-2h2.4a1.7 1.7 0 001.5-.9L7 16.2 8.1 18a1.7 1.7 0 001.5 1 1.7 1.7 0 001.5-1l1.1-1.8 1.1 1.8a1.7 1.7 0 001.5 1 1.7 1.7 0 001.5-1l1.1-1.8L18.5 18a1.7 1.7 0 001.5 1H22v2h-2zM6 14V5h3V2h6v3h3v9l-6-2-6 2z"/>'
+};
+const MODE_WORD = { walk:'Walk', subway:'Subway', car:'Car', ferry:'Ferry' };
+
+const CAT_LABEL = {
+  air:'Travel', hotel:'Hotel', sight:'See', view:'View', food:'Eat',
+  pizza:'Pizza', bagel:'Bagels', shop:'Shop', show:'Theatre',
+  park:'Park', museum:'Museum'
+};
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 2100);
+}
+
+/* --------------------------------------------------------------------------
+   5. NAVIGATION HAND-OFF
+   The app does not try to draw turn-by-turn itself. It hands the leg to the
+   maps app already holding real-time transit and voice guidance.
+   -------------------------------------------------------------------------- */
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+           || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+function navigate(to, from){
+  const dest = `${to.lat},${to.lng}`;
+  const mode = from ? (planLeg(from, to) || {}).mode : null;
+  const g = { walk:'walking', subway:'transit', car:'driving', ferry:'transit' }[mode] || 'transit';
+  const a = { walk:'w', subway:'r', car:'d', ferry:'r' }[mode] || 'r';
+
+  let url;
+  if (isIOS){
+    url = `https://maps.apple.com/?daddr=${dest}&dirflg=${a}`;
+    if (from) url += `&saddr=${from.lat},${from.lng}`;
+  } else {
+    url = `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=${g}`;
+    if (from) url += `&origin=${from.lat},${from.lng}`;
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
+/* --------------------------------------------------------------------------
+   6. LIVE POSITION
+   -------------------------------------------------------------------------- */
+
+let myPos = null, watchId = null;
+
+function whereAmI(){
+  if (!navigator.geolocation){ toast('This browser has no location access'); return; }
+  toast('Finding you…');
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      myPos = { lat:p.coords.latitude, lng:p.coords.longitude, cat:'here' };
+      const next = nextStop();
+      if (!next){ toast('Located. Nothing left on the schedule.'); return; }
+      const leg = planLeg(myPos, next) || { mode:'walk', min:0 };
+      toast(`${Math.round(leg.min)} min ${MODE_WORD[leg.mode].toLowerCase()} to ${next.title}`);
+      if (window._map) drawMap();
+      renderPlatform();
+    },
+    () => toast('Location unavailable — check permissions'),
+    { enableHighAccuracy:true, timeout:9000, maximumAge:30000 }
+  );
+}
+
+/* --------------------------------------------------------------------------
+   7. "NOW" LOGIC
+   -------------------------------------------------------------------------- */
+
+function nowInfo(){
+  const d = new Date();
+  const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const day = DAYS.find(x => x.date === iso);
+  return { iso, minutes: d.getHours()*60 + d.getMinutes(), day, live: !!day };
+}
+
+function nextStop(){
+  const n = nowInfo();
+  if (n.live){
+    const list = itemsFor(n.day.id);
+    const up = list.find(i => toMin(i.start) + i.dur > n.minutes);
+    if (up) return up;
+  }
+  const first = DAYS.find(d => d.date >= n.iso);
+  if (first) return itemsFor(first.id)[0] || null;
+  return null;
+}
+
+/* --------------------------------------------------------------------------
+   8. RENDER — platform strip
+   -------------------------------------------------------------------------- */
+
+function renderPlatform(){
+  const n  = nowInfo();
+  const pf = $('#platform');
+  const nx = nextStop();
+
+  $('#pf-clock').textContent = new Date().toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+
+  if (!nx){
+    $('#pf-name').textContent = 'Trip complete';
+    $('#pf-eyebrow').textContent = 'Safe travels';
+    $('#pf-eta').textContent = '—';
+    $('#pf-unit').textContent = '';
+    return;
+  }
+
+  const d = dayById(nx.day);
+  const b = $('#pf-bullet');
+  b.textContent = d.line;
+  b.style.background = d.color;
+  b.dataset.fg = d.fg === 'dark' ? 'dark' : 'light';
+
+  $('#pf-name').textContent = nx.title;
+  pf.classList.remove('is-now','is-late');
+
+  if (!n.live){
+    $('#pf-eyebrow').textContent = `${d.label} · first up`;
+    $('#pf-eta').textContent = fmt(nx.start).replace(/(am|pm)/,'');
+    $('#pf-unit').textContent = fmt(nx.start).slice(-2);
+    return;
+  }
+
+  const s = toMin(nx.start), e = s + nx.dur;
+  if (n.minutes >= s && n.minutes < e){
+    pf.classList.add('is-now');
+    $('#pf-eyebrow').textContent = 'Here now · until ' + fmt(toHHMM(e));
+    $('#pf-eta').textContent = e - n.minutes;
+    $('#pf-unit').textContent = 'min left';
+    $('#pf-status').textContent = 'Current stop';
+  } else {
+    const away = s - n.minutes;
+    $('#pf-status').textContent = 'Next stop';
+    $('#pf-eyebrow').textContent = 'Starts ' + fmt(nx.start);
+    if (away < 0){ pf.classList.add('is-late'); $('#pf-eta').textContent = Math.abs(away); $('#pf-unit').textContent = 'min late'; }
+    else if (away > 90){ $('#pf-eta').textContent = fmt(nx.start).replace(/(am|pm)/,''); $('#pf-unit').textContent = fmt(nx.start).slice(-2); }
+    else { $('#pf-eta').textContent = away; $('#pf-unit').textContent = 'min'; }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9. RENDER — day chips
+   -------------------------------------------------------------------------- */
+
+function activeDay(){
+  if (S.activeDay && dayById(S.activeDay)) return S.activeDay;
+  const n = nowInfo();
+  if (n.day) return n.day.id;
+  const up = DAYS.find(d => d.date >= n.iso);
+  return up ? up.id : DAYS[0].id;
+}
+
+function renderDayChips(){
+  const cur = activeDay();
+  const html = DAYS.map(d => `
+    <button class="day-chip" role="tab" data-day="${d.id}" aria-selected="${d.id===cur}">
+      <span class="bullet sm" style="background:${d.color}" data-fg="${d.fg==='dark'?'dark':'light'}">${d.line}</span>
+      <span class="lbl"><b>${d.label}</b><span>${d.short.split(' ')[1]} Aug</span></span>
+    </button>`).join('');
+  $('#days').innerHTML = html;
+  $('#days-map').innerHTML = html;
+}
+
+/* --------------------------------------------------------------------------
+   10. RENDER — the rail
+   -------------------------------------------------------------------------- */
+
+function renderTrip(){
+  const id   = activeDay();
+  const d    = dayById(id);
+  const list = itemsFor(id);
+  const n    = nowInfo();
+  const isToday = n.live && n.day.id === id;
+
+  $('#day-title').textContent = d.label + ', August ' + Number(d.date.slice(-2));
+
+  const inkindToday = list.filter(i => i.inkind).reduce((s,i) => s + (i.cost||0), 0);
+  const meta = [`<span class="tag">${d.caption}</span>`];
+  if (inkindToday) meta.push(`<span class="tag">$${inkindToday} on inKind</span>`);
+  const needBooking = list.filter(i => i.book).length;
+  if (needBooking) meta.push(`<span class="tag warn">${needBooking} still to book</span>`);
+  $('#day-meta').innerHTML = meta.join('');
+
+  const rail = $('#rail');
+  rail.style.setProperty('--day-color', d.color);
+
+  if (!list.length){
+    rail.innerHTML = `<div class="empty">Nothing scheduled yet.<br>Tap Add below to start this day.</div>
+      <div style="padding:0 var(--pad)"><button class="btn solid" data-add="${id}">Add a stop</button></div>`;
+    return;
+  }
+
+  let html = '';
+  list.forEach((it, idx) => {
+    const s = toMin(it.start), e = s + it.dur;
+    let cls = 'stop';
+    if (it.fixed) cls += ' fixed';
+    if (isToday && n.minutes >= e) cls += ' done';
+    if (isToday && n.minutes >= s && n.minutes < e) cls += ' now';
+
+    const chips = [];
+    if (it.conf)     chips.push(`<span class="chip conf">${esc(it.conf)}</span>`);
+    if (it.book)     chips.push(`<span class="chip pizza">Book ahead</span>`);
+    if (it.inkind)   chips.push(`<span class="chip money">inKind${it.cost?' · $'+it.cost:''}</span>`);
+    if (it.offer)    chips.push(`<span class="chip money">$50 off</span>`);
+    if (it.optional) chips.push(`<span class="chip">Optional</span>`);
+    if (it.warn)     chips.push(`<span class="chip pizza">Closes early</span>`);
+
+    html += `
+    <div class="${cls}" data-id="${it.id}">
+      <span class="stop-dot"></span>
+      <div class="card ${it.fixed ? '' : 'is-flex'}">
+        <div class="card-top">
+          <span class="card-time num">${fmt(it.start)}</span>
+          <span class="card-title">${esc(it.title)}</span>
+          ${it.dur ? `<span class="card-dur num">${it.dur}m</span>` : ''}
+        </div>
+        <div class="card-sub">
+          <span>${CAT_LABEL[it.cat] || 'Stop'}</span>
+          ${it.place ? `<span>· ${esc(it.place)}</span>` : ''}
+        </div>
+        ${it.note ? `<div class="card-note">${esc(it.note)}</div>` : ''}
+        ${chips.length ? `<div class="card-chips">${chips.join('')}</div>` : ''}
+        <div class="card-acts">
+          <button class="go" data-nav="${it.id}">Navigate</button>
+          <button data-edit="${it.id}">Edit</button>
+        </div>
+      </div>
+    </div>`;
+
+    const nxt = list[idx+1];
+    if (!nxt) return;
+
+    const leg  = planLeg(it, nxt);
+    const slack = toMin(nxt.start) - e;
+
+    const spare = slack - (leg ? leg.min : 0);
+
+    if (leg){
+      const tight = slack < leg.min;
+      const bullets = (leg.lines || []).map(l =>
+        `<span class="bullet sm" style="background:${lineColor(l)}" data-fg="${lineFg(l)}">${l}</span>`).join('');
+      html += `
+      <div class="leg ${tight ? 'tight' : ''}">
+        <span class="leg-line"></span>
+        <span class="leg-mode"><svg viewBox="0 0 24 24">${MODE_ICON[leg.mode]}</svg></span>
+        <div class="leg-body">
+          <b>${MODE_WORD[leg.mode]} ${leg.min} min</b>${bullets ? `<span class="lines">${bullets}</span>` : ''}
+          — ${esc(leg.detail)}
+          ${tight ? `<br><b>Tight:</b> only ${slack} min between these two.` : ''}
+        </div>
+      </div>`;
+    }
+
+    if (spare > 45 && it.cat !== 'air' && nxt.cat !== 'air'){
+      const h = Math.floor(spare/60), m = spare % 60;
+      html += `
+      <div class="gap">
+        <span class="gap-line"></span>
+        <button data-add="${id}" data-at="${toHHMM(e + (leg?leg.min:0) + 5)}">${h?h+'h ':''}${m}m free here — add something</button>
+      </div>`;
+    }
+  });
+
+  html += `<div style="padding:18px var(--pad) 0"><button class="btn solid" data-add="${id}">Add a stop</button></div>`;
+  rail.innerHTML = html;
+}
+
+/* MTA route bullet colours, for the little line discs in the leg labels */
+function lineColor(l){
+  if ('123'.includes(l))    return '#EE352E';
+  if ('456'.includes(l))    return '#00933C';
+  if ('7'.includes(l))      return '#B933AD';
+  if ('ACE'.includes(l))    return '#0039A6';
+  if ('BDFM'.includes(l))   return '#FF6319';
+  if ('NQRW'.includes(l))   return '#FCCC0A';
+  if (l === 'L')            return '#A7A9AC';
+  if (l === 'G')            return '#6CBE45';
+  if ('JZ'.includes(l))     return '#996633';
+  if (l === 'S')            return '#808183';
+  return '#808183';
+}
+const lineFg = l => 'NQRW'.includes(l) ? 'dark' : 'light';
+
+/* --------------------------------------------------------------------------
+   11. MAP
+   -------------------------------------------------------------------------- */
+
+let map, layer;
+
+function drawMap(){
+  if (!map){
+    map = L.map('map', { zoomControl:true, attributionControl:true }).setView([40.745,-73.99], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:19, subdomains:'abcd'
+    }).addTo(map);
+    window._map = map;
+  }
+  if (layer) map.removeLayer(layer);
+  layer = L.layerGroup().addTo(map);
+
+  const id = activeDay(), d = dayById(id), list = itemsFor(id);
+  const pts = [];
+
+  list.forEach((it, i) => {
+    const ll = [it.lat, it.lng];
+    pts.push(ll);
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="pin" style="background:${d.color};color:${d.fg==='dark'?'#0B0B0C':'#fff'}">${i+1}</div>`,
+      iconSize:[26,26], iconAnchor:[13,13]
+    });
+    L.marker(ll, { icon }).addTo(layer).bindPopup(
+      `<b>${esc(it.title)}</b><br>${fmt(it.start)} · ${esc(it.place || '')}<br>
+       <a href="#" onclick="navById('${it.id}');return false;">Navigate →</a>`
+    );
+  });
+
+  if (pts.length > 1){
+    L.polyline(pts, { color:d.color, weight:3, opacity:.55, dashArray:'1 7', lineCap:'round' }).addTo(layer);
+  }
+  if (myPos){
+    L.circleMarker([myPos.lat, myPos.lng], {
+      radius:7, color:'#fff', weight:3, fillColor:'#2E9BFF', fillOpacity:1
+    }).addTo(layer).bindPopup('You are here');
+    pts.push([myPos.lat, myPos.lng]);
+  }
+  if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.18));
+
+  $('#map-legend').innerHTML = DAYS.map(x =>
+    `<div><span class="bullet sm" style="background:${x.color};opacity:${x.id===id?1:.3}" data-fg="${x.fg==='dark'?'dark':'light'}">${x.line}</span>${x.label}</div>`
+  ).join('');
+}
+
+window.navById = function(id){
+  const it = S.items.find(x => x.id === id);
+  if (!it) return;
+  const list = itemsFor(it.day);
+  const i = list.findIndex(x => x.id === id);
+  navigate(it, myPos || (i > 0 ? list[i-1] : null));
+};
+
+/* --------------------------------------------------------------------------
+   12. VAULT — confirmations, money, pizza
+   -------------------------------------------------------------------------- */
+
+function renderVault(){
+  const withConf = S.items.filter(i => i.conf);
+  const inkind   = S.items.filter(i => i.inkind);
+  const total    = inkind.reduce((s,i) => s + (i.cost||0), 0);
+  const offerOk  = inkind.some(i => (i.cost||0) >= S.offerMin);
+  const covered  = S.credits + (offerOk ? S.offer : 0);
+  const oop      = Math.max(0, total - covered);
+  const pct      = Math.min(100, (total / Math.max(covered,1)) * 100);
+
+  const pizzas = S.items.filter(i => i.cat === 'pizza' || i.cat === 'bagel');
+
+  $('#vault-body').innerHTML = `
+    <h2>Everything you'll be asked for</h2>
+
+    <h3>Confirmations</h3>
+    ${withConf.map(i => `
+      <div class="row">
+        <span class="bullet sm" style="background:${dayById(i.day).color}" data-fg="${dayById(i.day).fg==='dark'?'dark':'light'}">${dayById(i.day).line}</span>
+        <div class="rmain"><b>${esc(i.title)}</b><span>${dayById(i.day).label} · ${fmt(i.start)}</span></div>
+        <button class="copy" data-copy="${esc(i.conf)}">${esc(i.conf)}</button>
+      </div>`).join('')}
+    <p class="hint" style="color:var(--paper-mute);font-size:11px">Tap any number to copy it.</p>
+
+    <h3>inKind budget</h3>
+    <div class="meter">
+      <i class="${oop>0?'over':'used'}" style="width:${pct}%"></i>
+    </div>
+    <div class="money-grid">
+      <div class="money-cell"><span>Planned spend</span><b class="num">$${total}</b></div>
+      <div class="money-cell"><span>Credits on hand</span><b class="num">$${S.credits}</b></div>
+      <div class="money-cell"><span>$50 off $150</span><b class="num" style="color:${offerOk?'var(--line-6)':'var(--paper-mute)'}">${offerOk?'Armed':'Unused'}</b></div>
+      <div class="money-cell ${oop>0?'warn':'good'}"><span>Out of pocket</span><b class="num">$${oop}</b></div>
+    </div>
+    ${offerOk ? '' : `<p class="hint" style="margin-top:10px">No single inKind bill hits $${S.offerMin} yet, so the $50 offer is sitting idle. Push one dinner above that line and it fires.</p>`}
+    ${inkind.map(i => `
+      <div class="row" style="margin-top:7px">
+        <div class="rmain"><b>${esc(i.title)}</b><span>${dayById(i.day).label} · ${fmt(i.start)}</span></div>
+        <span class="rval num">$${i.cost||0}</span>
+      </div>`).join('')}
+
+    <h3>One Bite scorecard</h3>
+    <p>Everyone knows the rules. Score them out of 10 and settle it at the gate on Monday.</p>
+    ${pizzas.map(p => {
+      const sc = S.scores[p.id] || {};
+      const vals = S.raters.map((_,i) => sc[i]).filter(v => v !== undefined && v !== '');
+      const avg = vals.length ? (vals.reduce((a,b)=>a+Number(b),0)/vals.length).toFixed(1) : '—';
+      return `
+      <div class="slice">
+        <div class="slice-head">
+          <b>${esc(p.title)}</b>
+          <span class="avg num ${vals.length?'':'empty'}">${avg}</span>
+        </div>
+        <div class="raters">
+          ${S.raters.map((r,i) => `
+            <div class="rater">
+              <span>${esc(r)}</span>
+              <input class="num" type="number" min="0" max="10" step="0.1"
+                     value="${sc[i] ?? ''}" data-score="${p.id}" data-rater="${i}" placeholder="–">
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+/* --------------------------------------------------------------------------
+   13. SETUP
+   -------------------------------------------------------------------------- */
+
+function renderSetup(){
+  $('#setup-body').innerHTML = `
+    <h2>Trip settings</h2>
+
+    <h3>Weather</h3>
+    <div id="wx"><p>Checking the forecast…</p></div>
+
+    <h3>Money</h3>
+    <div class="field-pair">
+      <div class="field"><label>inKind credits</label>
+        <input type="number" id="set-credits" value="${S.credits}"></div>
+      <div class="field"><label>Offer amount</label>
+        <input type="number" id="set-offer" value="${S.offer}"></div>
+    </div>
+    <div class="field"><label>Offer minimum spend</label>
+      <input type="number" id="set-offermin" value="${S.offerMin}"></div>
+
+    <h3>Who's scoring</h3>
+    <div class="field-pair">
+      ${S.raters.map((r,i)=>`<div class="field"><label>Name ${i+1}</label>
+        <input type="text" id="set-rater-${i}" value="${esc(r)}" maxlength="9"></div>`).join('')}
+    </div>
+    <button class="btn solid" id="save-settings">Save settings</button>
+
+    <h3>Share with the family</h3>
+    <p>This app keeps your edits on this device. To get changes onto everyone else's phone, export the file and send it to them — they import it and see exactly what you see.</p>
+    <button class="btn" id="export">Export trip file</button>
+    <button class="btn" id="import">Import trip file</button>
+    <input type="file" id="filein" accept=".json,application/json" hidden>
+
+    <h3>Print</h3>
+    <p>Prints a clean paper copy of every day, with confirmations. Worth having in a pocket when the phones die.</p>
+    <button class="btn" id="printit">Print the whole trip</button>
+
+    <h3>Start over</h3>
+    <p>Puts the published plan back and throws away every edit made on this device.</p>
+    <button class="btn danger" id="reset">Reset to the published plan</button>
+
+    ${memoryOnly ? `<p class="hint" style="margin-top:20px;color:var(--alert)">Heads up: this browser is blocking local storage, so edits will vanish when you close the tab. On the real ogarafamily.com site they will stick.</p>` : ''}
+    <p class="hint" style="margin-top:20px">Version ${TRIP_VERSION}. Add to your home screen for a full-screen app: Share → Add to Home Screen on iPhone, or the install icon in Chrome.</p>
+  `;
+  loadWeather();
+}
+
+async function loadWeather(){
+  const el = $('#wx');
+  try{
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=40.758&longitude=-73.985'
+      + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+      + '&temperature_unit=fahrenheit&timezone=America%2FNew_York'
+      + '&start_date=2026-08-14&end_date=2026-08-17';
+    const r = await fetch(url);
+    const j = await r.json();
+    if (!j.daily || !j.daily.time || !j.daily.time.length) throw 0;
+    el.innerHTML = j.daily.time.map((t,i) => {
+      const d = DAYS.find(x => x.date === t);
+      return `<div class="row">
+        <span class="bullet sm" style="background:${d?d.color:'#555'}" data-fg="${d&&d.fg==='dark'?'dark':'light'}">${d?d.line:'?'}</span>
+        <div class="rmain"><b>${d?d.label:t}</b><span>${j.daily.precipitation_probability_max[i]}% chance of rain</span></div>
+        <span class="rval num">${Math.round(j.daily.temperature_2m_max[i])}° / ${Math.round(j.daily.temperature_2m_min[i])}°</span>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML = `<p>The forecast only reaches about two weeks out, so August 14–17 will fill in here automatically once you're inside that window. Mid-August in New York usually means upper 80s and humid — plan on a lot of water and one afternoon thunderstorm.</p>`;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   14. ADD / EDIT SHEET
+   -------------------------------------------------------------------------- */
+
+function openSheet(html){
+  $('#sheet-body').innerHTML = html;
+  $('#sheet').classList.add('open');
+  $('#scrim').classList.add('open');
+}
+function closeSheet(){
+  $('#sheet').classList.remove('open');
+  $('#scrim').classList.remove('open');
+}
+
+function editSheet(id, dayId, atTime){
+  const it = id ? S.items.find(x => x.id === id) : null;
+  const day = it ? it.day : (dayId || activeDay());
+
+  openSheet(`
+    <h3>${it ? 'Edit stop' : 'Add a stop'}</h3>
+
+    ${it ? '' : `
+    <div class="field">
+      <label>Pick from the New York list</label>
+      <div class="lib" id="lib">
+        ${LIBRARY.map((l,i) => `<button type="button" data-lib="${i}">${esc(l.title)}<small>${esc(l.place)}</small></button>`).join('')}
+      </div>
+      <div class="hint">Or just type your own below — a restaurant reservation, a shop, anything.</div>
+    </div>`}
+
+    <div class="field"><label>What is it</label>
+      <input type="text" id="e-title" value="${it?esc(it.title):''}" placeholder="Dinner at Carbone"></div>
+
+    <div class="field"><label>Where</label>
+      <input type="text" id="e-place" value="${it?esc(it.place||''):''}" placeholder="181 Thompson St"></div>
+
+    <div class="field-pair">
+      <div class="field"><label>Day</label>
+        <select id="e-day">${DAYS.map(d=>`<option value="${d.id}" ${d.id===day?'selected':''}>${d.label} ${d.short.split(' ')[1]}</option>`).join('')}</select></div>
+      <div class="field"><label>Start</label>
+        <input type="time" id="e-start" value="${it?it.start:(atTime||'12:00')}"></div>
+    </div>
+
+    <div class="field-pair">
+      <div class="field"><label>Minutes there</label>
+        <input type="number" id="e-dur" value="${it?it.dur:60}" min="0" step="5"></div>
+      <div class="field"><label>Type</label>
+        <select id="e-cat">${Object.keys(CAT_LABEL).map(c=>`<option value="${c}" ${it&&it.cat===c?'selected':''}>${CAT_LABEL[c]}</option>`).join('')}</select></div>
+    </div>
+
+    <div class="field-pair">
+      <div class="field"><label>Latitude</label>
+        <input type="number" id="e-lat" step="0.0001" value="${it?it.lat:40.7594}"></div>
+      <div class="field"><label>Longitude</label>
+        <input type="number" id="e-lng" step="0.0001" value="${it?it.lng:-73.9840}"></div>
+    </div>
+    <div class="hint" style="margin-top:-6px;margin-bottom:12px">
+      Coordinates drive the map and the walking maths. To get them: long-press the spot in Google Maps and copy the numbers it shows.
+    </div>
+
+    <div class="field"><label>Confirmation number</label>
+      <input type="text" id="e-conf" value="${it?esc(it.conf||''):''}" placeholder="Optional"></div>
+
+    <div class="field-pair">
+      <div class="field"><label>On inKind?</label>
+        <select id="e-inkind"><option value="0">No</option><option value="1" ${it&&it.inkind?'selected':''}>Yes</option></select></div>
+      <div class="field"><label>Expected cost</label>
+        <input type="number" id="e-cost" value="${it?(it.cost||''):''}" placeholder="0"></div>
+    </div>
+
+    <div class="field"><label>Notes</label>
+      <textarea id="e-note" placeholder="Reservation under O'Gara, ask for the back room">${it?esc(it.note||''):''}</textarea></div>
+
+    <div class="field"><label>Lock this time?</label>
+      <select id="e-fixed">
+        <option value="0">No — it can move</option>
+        <option value="1" ${it&&it.fixed?'selected':''}>Yes — flight, curtain, timed entry</option>
+      </select></div>
+
+    <button class="btn solid" id="e-save">${it?'Save changes':'Add to the trip'}</button>
+    ${it ? `<button class="btn danger" id="e-del">Remove this stop</button>` : ''}
+    <button class="btn" id="e-cancel">Cancel</button>
+  `);
+
+  if (!it){
+    $$('#lib [data-lib]').forEach(b => b.onclick = () => {
+      const l = LIBRARY[+b.dataset.lib];
+      $('#e-title').value = l.title;
+      $('#e-place').value = l.place;
+      $('#e-lat').value = l.lat;
+      $('#e-lng').value = l.lng;
+      $('#e-dur').value = l.dur;
+      $('#e-cat').value = l.cat;
+      toast('Filled in ' + l.title);
+    });
+  }
+
+  $('#e-cancel').onclick = closeSheet;
+  if ($('#e-del')) $('#e-del').onclick = () => {
+    S.items = S.items.filter(x => x.id !== id);
+    save(); closeSheet(); renderAll(); toast('Removed');
+  };
+
+  $('#e-save').onclick = () => {
+    const t = $('#e-title').value.trim();
+    if (!t){ toast('Give it a name first'); return; }
+    const rec = {
+      id: id || 'x' + Date.now().toString(36),
+      day: $('#e-day').value,
+      start: $('#e-start').value || '12:00',
+      dur: Math.max(0, +$('#e-dur').value || 0),
+      cat: $('#e-cat').value,
+      title: t,
+      place: $('#e-place').value.trim(),
+      lat: +$('#e-lat').value,
+      lng: +$('#e-lng').value,
+      conf: $('#e-conf').value.trim(),
+      note: $('#e-note').value.trim(),
+      inkind: $('#e-inkind').value === '1',
+      cost: +$('#e-cost').value || 0,
+      fixed: $('#e-fixed').value === '1'
+    };
+    if (id){
+      const old = S.items.find(x => x.id === id);
+      Object.assign(old, rec);
+    } else {
+      S.items.push(rec);
+    }
+    S.activeDay = rec.day;
+    save(); closeSheet(); renderAll();
+    toast(id ? 'Updated — timings recalculated' : 'Added — timings recalculated');
+  };
+}
+
+/* --------------------------------------------------------------------------
+   15. WIRING
+   -------------------------------------------------------------------------- */
+
+function showView(v){
+  $$('.view').forEach(x => x.classList.remove('active'));
+  $('#view-' + v).classList.add('active');
+  $$('nav button').forEach(b =>
+    b.dataset.view === v ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
+  if (v === 'map')   setTimeout(() => { drawMap(); map.invalidateSize(); }, 40);
+  if (v === 'vault') renderVault();
+  if (v === 'setup') renderSetup();
+  window.scrollTo(0,0);
+}
+
+function renderAll(){
+  renderDayChips();
+  renderTrip();
+  renderPlatform();
+  if (map && $('#view-map').classList.contains('active')) drawMap();
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-day],[data-nav],[data-edit],[data-add],[data-copy],nav button');
+  if (!t) return;
+
+  if (t.dataset.day){
+    S.activeDay = t.dataset.day; save(); renderDayChips(); renderTrip();
+    if ($('#view-map').classList.contains('active')) drawMap();
+    return;
+  }
+  if (t.dataset.nav)  { navById(t.dataset.nav); return; }
+  if (t.dataset.edit) { editSheet(t.dataset.edit); return; }
+  if (t.dataset.add)  { editSheet(null, t.dataset.add, t.dataset.at); return; }
+  if (t.dataset.copy) {
+    navigator.clipboard?.writeText(t.dataset.copy)
+      .then(() => toast('Copied ' + t.dataset.copy))
+      .catch(() => toast(t.dataset.copy));
+    return;
+  }
+  if (t.dataset.view) { showView(t.dataset.view); return; }
+});
+
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.score !== undefined){
+    S.scores[el.dataset.score] = S.scores[el.dataset.score] || {};
+    S.scores[el.dataset.score][el.dataset.rater] = el.value;
+    save();
+    const card = el.closest('.slice');
+    const sc = S.scores[el.dataset.score];
+    const vals = Object.values(sc).filter(v => v !== '' && v !== undefined);
+    const avg = vals.length ? (vals.reduce((a,b)=>a+Number(b),0)/vals.length).toFixed(1) : '—';
+    const badge = card.querySelector('.avg');
+    badge.textContent = avg;
+    badge.classList.toggle('empty', !vals.length);
+  }
+});
+
+document.addEventListener('click', e => {
+  if (e.target.id === 'save-settings'){
+    S.credits  = +$('#set-credits').value  || 0;
+    S.offer    = +$('#set-offer').value    || 0;
+    S.offerMin = +$('#set-offermin').value || 0;
+    S.raters   = S.raters.map((_,i) => $('#set-rater-'+i).value.trim() || ('P'+(i+1)));
+    save(); toast('Saved'); renderSetup();
+  }
+  if (e.target.id === 'export'){
+    const blob = new Blob([JSON.stringify(S,null,2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ogara-nyc-trip.json';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('Exported — send that file to the family');
+  }
+  if (e.target.id === 'import') $('#filein').click();
+  if (e.target.id === 'printit') window.print();
+  if (e.target.id === 'reset'){
+    if (confirm('Throw away every edit on this device and go back to the published plan?')){
+      S = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      save(); renderAll(); showView('trip'); toast('Back to the published plan');
+    }
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id !== 'filein') return;
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const j = JSON.parse(r.result);
+      if (!j.items) throw 0;
+      S = Object.assign(JSON.parse(JSON.stringify(DEFAULT_STATE)), j);
+      save(); renderAll(); showView('trip'); toast('Imported');
+    }catch(err){ toast('That file did not look like a trip file'); }
+  };
+  r.readAsText(f);
+});
+
+$('#scrim').onclick = closeSheet;
+$('#pf-where').onclick = whereAmI;
+$('#pf-nav').onclick = () => {
+  const n = nextStop(); if (!n) return;
+  const list = itemsFor(n.day);
+  const i = list.findIndex(x => x.id === n.id);
+  navigate(n, myPos || (i > 0 ? list[i-1] : null));
+};
+
+/* go */
+renderAll();
+showView('trip');
+setInterval(renderPlatform, 20000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) renderPlatform(); });
+
+</script>
+</body>
+</html>
