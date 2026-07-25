@@ -595,7 +595,7 @@ nav button[aria-current="page"]{color:var(--paper)}
    `fixed: true` means the time cannot move (flights, curtain, timed entry).
    --------------------------------------------------------------------------- */
 
-const TRIP_VERSION = 8;
+const TRIP_VERSION = 9;
 
 const DAYS = [
   { id:'fri', date:'2026-08-14', label:'Friday',   short:'Fri 14', line:'7', color:'#B933AD', fg:'light',
@@ -1169,7 +1169,7 @@ function renderDayChips(){
   const html = DAYS.map(d => `
     <button class="day-chip" role="tab" data-day="${d.id}" aria-selected="${d.id===cur}">
       <span class="bullet sm" style="background:${d.color}" data-fg="${d.fg==='dark'?'dark':'light'}">${d.line}</span>
-      <span class="lbl"><b>${d.label}</b><span>${d.short.split(' ')[1]} Aug</span></span>
+      <span class="lbl"><b>${d.label}</b><span>${itemsFor(d.id).length} stops</span></span>
     </button>`).join('');
   $('#days').innerHTML = html;
   $('#days-map').innerHTML = html;
@@ -1433,6 +1433,9 @@ function renderSetup(){
 
     <h3>Weather</h3>
     <div id="wx"><p>Checking the forecast…</p></div>
+
+    <h3>Reading the app</h3>
+    <p>The coloured discs are subway route bullets, not counts — they tag each day with a line and that colour carries through the timeline, the map pins and the cards. Friday is the <b style="color:#B933AD">7</b>, Saturday the <b style="color:#EE352E">1</b> down to South Ferry, Sunday the <b style="color:#00933C">6</b>, Monday the <b style="color:#E4B23C">N</b>. Stop counts live on the day buttons; the numbers on map pins are the order you visit them.</p>
 
     <h3>Money</h3>
     <div class="field-pair">
