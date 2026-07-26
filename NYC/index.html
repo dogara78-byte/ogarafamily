@@ -476,6 +476,54 @@ nav button[aria-current="page"]{color:var(--paper)}
 .view{display:none}
 .view.active{display:block}
 
+/* ============================================================
+   GATE
+   Nothing loads behind this until the phrase decrypts the trip.
+   ============================================================ */
+#gate{
+  position:fixed;inset:0;z-index:200;display:none;
+  place-items:center;background:var(--ink);padding:24px;
+}
+.gate-card{width:100%;max-width:330px;text-align:center}
+.gate-bullets{display:flex;justify-content:center;gap:8px;margin-bottom:26px}
+.gate-bullets .bullet{width:38px;height:38px;font-size:19px}
+.gate-card h1{
+  margin:0;font-size:25px;font-weight:900;letter-spacing:-.035em;
+}
+.gate-card .sub{
+  font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--paper-mute);margin-top:8px;
+}
+#gate-form{margin-top:30px;text-align:left}
+#gate-form label.lab{
+  display:block;font-size:9.5px;font-weight:800;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--paper-mute);margin-bottom:6px;
+}
+#gate-pass{
+  width:100%;padding:14px 14px;border-radius:5px;text-align:center;
+  background:#0F1113;border:1px solid var(--ink-3);color:var(--paper);
+  font-size:17px;letter-spacing:.14em;
+}
+#gate-pass:focus{outline:2px solid var(--paper);outline-offset:1px;border-color:transparent}
+.gate-remember{
+  display:flex;align-items:center;gap:9px;margin:14px 2px 0;
+  font-size:12px;color:var(--paper-dim);cursor:pointer;
+}
+.gate-remember input{width:17px;height:17px;accent-color:var(--paper)}
+#gate-go{
+  width:100%;margin-top:18px;padding:14px;border-radius:5px;
+  background:var(--paper);color:var(--ink);
+  font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+}
+#gate-go:disabled{opacity:.45}
+#gate-msg{
+  min-height:18px;margin-top:14px;text-align:center;
+  font-size:12px;font-weight:600;color:var(--alert);
+}
+.gate-foot{
+  margin-top:26px;font-size:11px;line-height:1.5;color:var(--paper-mute);text-align:center;
+}
+
 .empty{
   padding:40px var(--pad);text-align:center;color:var(--paper-mute);
   font-size:13px;line-height:1.5;
@@ -494,6 +542,30 @@ nav button[aria-current="page"]{color:var(--paper)}
 </style>
 </head>
 <body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-bullets">
+      <span class="bullet" style="background:#B933AD">7</span>
+      <span class="bullet" style="background:#EE352E">1</span>
+      <span class="bullet" style="background:#00933C">6</span>
+      <span class="bullet" style="background:#FCCC0A" data-fg="dark">N</span>
+    </div>
+    <h1>O'Gara / New York</h1>
+    <div class="sub">August 14–17, 2026</div>
+    <form id="gate-form" autocomplete="on">
+      <label class="lab" for="gate-pass">Pass phrase</label>
+      <input type="password" id="gate-pass" name="password" autocomplete="current-password"
+             autocapitalize="off" autocorrect="off" spellcheck="false">
+      <label class="gate-remember">
+        <input type="checkbox" id="gate-remember" checked> Remember on this phone
+      </label>
+      <button type="submit" id="gate-go">Enter</button>
+      <div id="gate-msg" role="status" aria-live="polite"></div>
+    </form>
+    <div class="gate-foot">Ask Dad.</div>
+  </div>
+</div>
 
 <div id="app">
 
@@ -595,20 +667,27 @@ nav button[aria-current="page"]{color:var(--paper)}
    `fixed: true` means the time cannot move (flights, curtain, timed entry).
    --------------------------------------------------------------------------- */
 
-const TRIP_VERSION = 9;
+const TRIP_VERSION = 13;
 
-const DAYS = [
+/* The trip payload lives between the two markers below. lock.html encrypts
+   everything in there with AES-256-GCM and blanks it out, leaving only
+   ciphertext in VAULT. Nothing readable stays behind. */
+let VAULT = null; /*__VAULT__*/
+
+/*__TRIP_START__*/
+
+let DAYS = [
   { id:'fri', date:'2026-08-14', label:'Friday',   short:'Fri 14', line:'7', color:'#B933AD', fg:'light',
     caption:'Arrive, Midtown east-to-west, Empire State after dark' },
   { id:'sat', date:'2026-08-15', label:'Saturday', short:'Sat 15', line:'1', color:'#EE352E', fg:'light',
     caption:'Harbor and downtown all day, Broadway at seven' },
   { id:'sun', date:'2026-08-16', label:'Sunday',   short:'Sun 16', line:'6', color:'#00933C', fg:'light',
-    caption:'Bagels, pizza, and the long walk from Nolita to Union Square' },
+    caption:'Bagels, SoHo, Union Square, then Fifth Avenue' },
   { id:'mon', date:'2026-08-17', label:'Monday',   short:'Mon 17', line:'N', color:'#FCCC0A', fg:'dark',
-    caption:'Central Park, Rockefeller, Fifth Avenue, then home' }
+    caption:'Central Park, Rockefeller Plaza, then home' }
 ];
 
-const BASE_ITEMS = [
+let BASE_ITEMS = [
   /* ---------------------------- FRIDAY ---------------------------------- */
   { id:'f1', day:'fri', start:'13:11', dur:45, cat:'air', fixed:true,
     title:'Land at LaGuardia', place:'LaGuardia Airport, Terminal C',
@@ -618,37 +697,32 @@ const BASE_ITEMS = [
   { id:'f2', day:'fri', start:'15:00', dur:30, cat:'hotel', fixed:true,
     title:'Check in — Hard Rock Hotel', place:'159 W 48th St',
     lat:40.7594, lng:-73.9840, conf:'73450836993472',
-    note:'Drop bags and go. Everything today is within a 15-minute walk of this front door.' },
+    note:'Drop bags and go. Everything today is within a 20-minute walk of this front door.' },
 
-  { id:'f3', day:'fri', start:'17:30', dur:20, cat:'sight',
+  { id:'f6', day:'fri', start:'15:45', dur:25, cat:'sight',
+    title:'Times Square', place:'Duffy Square red steps',
+    lat:40.7590, lng:-73.9845,
+    note:'Go up the red steps for the photo looking south down Broadway. From up there you are looking straight at One Times Square, and the New Year\'s Eve ball sits on its roof all year — so your son still gets to stand where the ball drops, just from the street rather than the deck.' },
+
+  { id:'f5', day:'fri', start:'16:25', dur:25, cat:'sight',
+    title:'Bryant Park & the Library steps', place:'Fifth Ave at 41st St',
+    lat:40.7532, lng:-73.9822,
+    note:'Patience and Fortitude on the steps, the park behind. Since you are staying outside, the closing time stops mattering — the facade is lit and the lawn is full on an August evening.' },
+
+  { id:'f3', day:'fri', start:'17:05', dur:25, cat:'sight',
     title:'Grand Central Terminal', place:'89 E 42nd St',
     lat:40.7527, lng:-73.9772,
     note:'Main Concourse ceiling, then the Whispering Gallery outside the Oyster Bar — stand in opposite corners of the arch and talk into the tile.' },
 
-  { id:'f4', day:'fri', start:'18:05', dur:25, cat:'sight',
+  { id:'f4', day:'fri', start:'17:45', dur:30, cat:'sight',
     title:'Tudor City Overpass — Chrysler & the UN', place:'E 42nd St at Tudor City Place',
     lat:40.7495, lng:-73.9711,
-    note:'The single best exterior view of the Chrysler Building anywhere. Standing at its base on Lexington you cannot actually see the crown — from this overpass you look straight west down 42nd Street and the whole spire lines up over the traffic. Then walk down the stairs to Ralph Bunche Park at First Ave and the UN Secretariat with its row of member flags is directly across the street. Two walk-bys, one stop, twenty-five minutes.' },
+    note:'The single best exterior view of the Chrysler Building anywhere. Standing at its base on Lexington you cannot actually see the crown — from this overpass you look straight west down 42nd Street and the whole spire lines up over the traffic. Then walk down the stairs to Ralph Bunche Park at First Ave and the UN Secretariat with its row of member flags is directly across the street. Two walk-bys, one stop.' },
 
-  { id:'f5', day:'fri', start:'17:00', dur:20, cat:'sight',
-    title:'Bryant Park & the Library steps', place:'Fifth Ave at 41st St',
-    lat:40.7532, lng:-73.9822,
-    note:'Patience and Fortitude on the steps, the park behind. Since you are staying outside, the closing time stops mattering — the facade is lit and the lawn is full on a August evening.' },
-
-  { id:'f6', day:'fri', start:'15:45', dur:20, cat:'sight',
-    title:'Times Square', place:'Duffy Square red steps',
-    lat:40.7590, lng:-73.9845,
-    note:'Go up the red steps for the photo looking south down Broadway.' },
-
-  { id:'f7', day:'fri', start:'16:15', dur:30, cat:'view', book:true,
-    title:'One Times Square Skywalk', place:'1475 Broadway',
-    lat:40.7565, lng:-73.9861, url:'https://onetimessquare.com',
-    note:'This is where the ball drops. Glass elevator to a 360° deck on the 19th floor, and the New Year\'s Eve ball is right there. Timed 30-minute slots — book this before you leave Indiana.' },
-
-  { id:'f8', day:'fri', start:'19:00', dur:60, cat:'food', inkind:true, cost:170,
-    title:'Dinner — Zaytinya', place:'1185 Broadway',
-    lat:40.7452, lng:-73.9884,
-    note:'Eastern Mediterranean small plates, José Andrés. On inKind, and it sits six blocks below the Empire State so you walk straight to your 8:15 entry.' },
+  { id:'f8', day:'fri', start:'19:00', dur:60, cat:'food', inkind:true, cost:150,
+    title:'Dinner — Black Tap Craft Burgers', place:'45 West 35th St — Herald Square',
+    lat:40.7498, lng:-73.9866,
+    note:'Griddled burgers and the CrazyShake milkshakes, five minutes from the Empire State entrance. On inKind, so pay through the app. Book ahead if you can; the Herald Square room fills up on a Friday.' },
 
   { id:'f9', day:'fri', start:'20:15', dur:75, cat:'view', fixed:true,
     title:'Empire State Building', place:'20 W 34th St — 86th floor',
@@ -669,109 +743,79 @@ const BASE_ITEMS = [
   { id:'s3', day:'sat', start:'12:05', dur:60, cat:'museum',
     title:'Ellis Island', place:'Ellis Island National Museum of Immigration',
     lat:40.6995, lng:-74.0397,
-    note:'Included in the same ticket and the sleeper hit of the day. If anyone is flagging by 1:00, this is the thing to cut.' },
+    note:'Included in the same ticket and the sleeper hit of the day. If anyone is flagging by 1:00, this is the thing to cut — today runs on a tighter clock now that dinner is at 5:30.' },
 
-  { id:'s4', day:'sat', start:'13:45', dur:30, cat:'sight',
-    title:'Charging Bull & Bowling Green', place:'Broadway at Bowling Green',
-    lat:40.7056, lng:-74.0134,
-    note:'A short walk up from the ferry landing. Fearless Girl now stands across from the Stock Exchange, not here.' },
-
-  { id:'s5', day:'sat', start:'14:25', dur:25, cat:'sight',
-    title:'Wall Street & Federal Hall', place:'Wall St at Broad St',
-    lat:40.7069, lng:-74.0113,
-    note:'The Exchange facade, Federal Hall steps where Washington was sworn in, and Fearless Girl.' },
-
-  { id:'s6', day:'sat', start:'15:05', dur:40, cat:'sight',
+  { id:'s6', day:'sat', start:'13:55', dur:40, cat:'sight',
     title:'9/11 Memorial pools', place:'180 Greenwich St',
     lat:40.7115, lng:-74.0134, url:'https://911memorial.org',
-    note:'The pools are free and outdoors. The museum below needs two hours you do not have today — if you want it, it has to replace Ellis Island this morning.' },
+    note:'The pools are free and outdoors. The walk up from the ferry landing runs straight past the Charging Bull at Bowling Green and Trinity Church — you get both without stopping for either, and Wall Street is three blocks east if anyone changes their mind. The museum below needs two hours you do not have.' },
 
-  { id:'s7', day:'sat', start:'15:55', dur:15, cat:'sight',
+  { id:'s7', day:'sat', start:'14:45', dur:15, cat:'sight',
     title:"St. Paul's Chapel", place:'209 Broadway',
     lat:40.7110, lng:-74.0092,
     note:'Oldest church building in Manhattan, and it survived the towers falling a block away. Five minutes, and worth them.' },
 
-  { id:'s8', day:'sat', start:'16:20', dur:30, cat:'shop',
-    title:'The Oculus & Westfield WTC', place:'185 Greenwich St',
-    lat:40.7113, lng:-74.0110,
-    note:'Real shopping inside a Calatrava landmark, and the E train home starts right underneath it.' },
-
-  { id:'s8b', day:'sat', start:'17:10', dur:15, cat:'sight',
+  { id:'s8b', day:'sat', start:'15:20', dur:15, cat:'sight',
     title:'Hook & Ladder 8 — the Ghostbusters firehouse', place:'14 North Moore St, Tribeca',
     lat:40.7195, lng:-74.0067,
-    note:'The actual exterior from both films, and still a working FDNY house — so it is a sidewalk photo, not a walk-in. The Ghostbusters logo is painted on the apron out front. Best part: it costs you nothing today. It sits on the walk between the Oculus and the 1 train at Franklin St, which runs straight up to 50th St for dinner.' },
+    note:'The actual exterior from both films, still a working FDNY house, so it is a sidewalk photo rather than a walk-in. The Ghostbusters logo is painted on the apron out front. Sixteen minutes north of St. Paul\'s, and the 1 train at Franklin St is two blocks away — straight up to 50th St and the hotel.' },
 
-  { id:'s9', day:'sat', start:'17:45', dur:60, cat:'food', inkind:true, cost:180, offer:true,
-    title:'Dinner — Oceana', place:'120 W 49th St',
-    lat:40.7595, lng:-73.9820,
-    note:'Upscale seafood, four blocks from the Marquis, and they know what a 7:00 curtain means. Use the $50-off-$150 offer on this bill.' },
+  { id:'s8h', day:'sat', start:'16:00', dur:80, cat:'hotel',
+    title:'Back to the hotel', place:'Hard Rock Hotel, 159 W 48th St',
+    lat:40.7594, lng:-73.9840,
+    note:'Eighty minutes, not twenty. Enough for four people to shower, change out of eight hours of harbour and heat, and sit down for a bit before dinner. This is what dropping Wall Street and the Oculus bought you.' },
+
+  { id:'s9', day:'sat', start:'17:30', dur:75, cat:'food', inkind:true, cost:180,
+    title:"Dinner — Tony's Di Napoli", place:'147 W 43rd St',
+    lat:40.7565, lng:-73.9855,
+    note:'Family-style Southern Italian in enormous shared platters — order fewer dishes than feels right, the portions are for the table. Thirty years in the Theater District and built for a 7:00 curtain, so tell them you have one. Seven minutes from the Marquis, and on inKind.' },
 
   { id:'s10', day:'sat', start:'19:00', dur:170, cat:'show', fixed:true,
     title:'Stranger Things: The First Shadow', place:'Marquis Theatre, 210 W 46th St',
     lat:40.7590, lng:-73.9866, conf:'T072526056764',
-    note:'Roughly 2h50 with intermission, so you are out around 9:50 — not 9:00. Four Tony Awards for its stagecraft, and it is set in Hawkins, Indiana, which will land differently for your table than for most of the house.' },
-
-  { id:'s11', day:'sat', start:'22:05', dur:30, cat:'pizza',
-    title:"Late slice — Joe's Pizza", place:'1435 Broadway at 40th',
-    lat:40.7549, lng:-73.9868,
-    note:'Open late, five minutes from the theatre. The reference-standard New York slice — good calibration bite before the real hunting starts tomorrow.' },
+    note:'Roughly 2h50 with intermission, so you are out around 9:50. Four Tony Awards for its stagecraft, and it is set in Hawkins, Indiana, which will land differently for your table than for most of the house. Joe\'s Pizza at 40th and Broadway is open late and five minutes away if anyone wants a slice on the walk back.' },
 
   /* ---------------------------- SUNDAY ---------------------------------- */
   { id:'u1', day:'sun', start:'08:30', dur:50, cat:'bagel',
-    title:"Russ & Daughters", place:'179 E Houston St',
+    title:'Russ & Daughters', place:'179 E Houston St',
     lat:40.7226, lng:-73.9882,
-    note:'Appetizing shop since 1914, hand-sliced nova, and the counter theatre is half the reason to go. This is the bagel morning for your wife and daughter. Ess-a-Bagel is the alternate if you want the big overstuffed Midtown version instead.' },
+    note:'Appetizing shop since 1914, hand-sliced nova, and the counter theatre is half the reason to go. This is the bagel morning. Ess-a-Bagel is the alternate if you want the big overstuffed Midtown version instead.' },
 
   { id:'u2', day:'sun', start:'09:40', dur:25, cat:'sight',
-    title:'Elizabeth Street Garden', place:'209 Elizabeth St, Nolita',
+    title:'Elizabeth Street Garden & Nolita', place:'209 Elizabeth St',
     lat:40.7229, lng:-73.9944,
-    note:'A sculpture garden wedged into a Nolita block. Two minutes of quiet before the shopping starts.' },
+    note:'A sculpture garden wedged into a Nolita block, then the boutique run on Mulberry and Elizabeth. Prince Street Pizza is on this corner if the whim strikes — 27 Prince St, and it is on inKind.' },
 
-  { id:'u3', day:'sun', start:'10:15', dur:35, cat:'pizza', inkind:true, cost:30,
-    title:'Prince Street Pizza', place:'27 Prince St',
-    lat:40.7233, lng:-73.9945,
-    note:'You already know. Spicy Spring square. It is on inKind, so put it on the app.' },
-
-  { id:'u4', day:'sun', start:'11:00', dur:40, cat:'pizza', optional:true, book:true,
-    title:'Ceres', place:'164 Mott St',
-    lat:40.7203, lng:-73.9958,
-    note:'Portnoy gave it a 9.2 — one of the highest scores he has handed out in years. Eleven Madison Park alumni, sourdough base, whole pies only, sells out daily. Reserve a pickup slot online in advance or skip it. Closed Mondays and Tuesdays.' },
-
-  { id:'u5', day:'sun', start:'11:50', dur:85, cat:'shop',
+  { id:'u5', day:'sun', start:'10:20', dur:120, cat:'shop',
     title:'SoHo shopping', place:'Broadway & Prince St',
     lat:40.7246, lng:-73.9977,
-    note:'Broadway is the chains. The good stuff is on the cobblestones — Mercer, Greene, Wooster.' },
+    note:'Broadway is the chains. The good stuff is on the cobblestones — Mercer, Greene, Wooster. The open block after this is deliberate: you are standing in the best pizza square mile in the city. Prince Street is four minutes away and on inKind, Lombardi\'s and Rubirosa are closer still, and Ceres is a block past Prince on Mott.' },
 
-  { id:'u6', day:'sun', start:'13:30', dur:25, cat:'park',
-    title:'Washington Square Park', place:'Washington Square Arch',
-    lat:40.7308, lng:-73.9973,
-    note:'Chess tables, buskers, the arch. Cut through and keep walking west into the Village.' },
-
-  { id:'u7', day:'sun', start:'14:10', dur:70, cat:'pizza',
-    title:"John's of Bleecker Street", place:'278 Bleecker St',
-    lat:40.7317, lng:-74.0035,
-    note:'Coal-fired, whole pies only, no slices, same ovens since 1929. A late lunch means you walk past the line instead of standing in it.' },
-
-  { id:'u8', day:'sun', start:'15:40', dur:55, cat:'shop',
+  { id:'u8', day:'sun', start:'14:00', dur:55, cat:'shop',
     title:'Barnes & Noble — Union Square', place:'33 E 17th St',
     lat:40.7370, lng:-73.9906,
     note:'This is the one. Since the old Fifth Avenue flagship closed in 2014, Union Square has been the largest store in the chain.' },
 
-  { id:'u9', day:'sun', start:'16:45', dur:40, cat:'shop',
+  { id:'u9', day:'sun', start:'15:05', dur:35, cat:'shop',
     title:'The Strand', place:'828 Broadway',
     lat:40.7333, lng:-73.9909,
     note:'Two blocks south. Eighteen miles of books, and honestly the better bookstore of the two. Do both.' },
 
-  { id:'u10', day:'sun', start:'17:45', dur:90, cat:'food', optional:true,
-    title:'Dinner — Gramercy Tavern', place:'42 E 20th St',
-    lat:40.7387, lng:-73.9884,
-    note:'Three blocks from the Strand and a proper last real dinner. This one is cash — your inKind credits are fully committed elsewhere. If you would rather spend them here, drop Monday breakfast at Sarabeth\'s and eat near the hotel instead. After a day of pizza you may also just want a light room-service night, which is a perfectly good answer.' },
+  { id:'m5', day:'sun', start:'16:15', dur:95, cat:'shop',
+    title:'Fifth Avenue', place:"St. Patrick's to the Apple Cube",
+    lat:40.7600, lng:-73.9750,
+    note:"Moved off Monday so it gets real time instead of a rushed hour before the airport. St. Patrick's Cathedral, Saks, Bergdorf, and the glass Apple Cube at 59th. Walk it north and the park is right there at the top." },
+
+  { id:'u10', day:'sun', start:'18:15', dur:90, cat:'food', inkind:true, cost:190, offer:true,
+    title:'Dinner — Bond 45', place:'221 W 46th St',
+    lat:40.7592, lng:-73.9873,
+    note:'Housemade pasta, seafood and the veal chops, in the old Hotel Astor building right across from the Marquis you sat in last night. Sixteen minutes down from the top of Fifth Avenue and two blocks from your bed. This is where the $50-off-$150 offer should land — by Sunday your credits are spent down and this is the first bill you actually pay money on.' },
 
   /* ---------------------------- MONDAY ---------------------------------- */
-  { id:'m1', day:'mon', start:'08:30', dur:60, cat:'food', inkind:true, cost:120,
+  { id:'m1', day:'mon', start:'08:30', dur:60, cat:'food', inkind:true, cost:150,
     title:"Breakfast — Sarabeth's", place:'40 Central Park South',
     lat:40.7654, lng:-73.9760,
-    note:'On inKind, and it puts you at the bottom edge of the park with your last credits spent.' },
+    note:'On inKind, and it puts you at the bottom edge of the park with the last of your credits spent.' },
 
   { id:'m2', day:'mon', start:'09:40', dur:55, cat:'park',
     title:'Central Park stroll', place:'The Pond & Gapstow Bridge',
@@ -783,15 +827,10 @@ const BASE_ITEMS = [
     lat:40.7594, lng:-73.9840,
     note:'Leave the luggage with the bell desk. You come back for it around 2:00.' },
 
-  { id:'m4', day:'mon', start:'11:35', dur:55, cat:'sight',
+  { id:'m4', day:'mon', start:'11:35', dur:75, cat:'sight',
     title:'Rockefeller Plaza', place:'30 Rockefeller Plaza',
     lat:40.7587, lng:-73.9787,
-    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens. Top of the Rock is here if you want a second deck — it is the better view of the two because the Empire State is in it.' },
-
-  { id:'m5', day:'mon', start:'12:45', dur:60, cat:'shop',
-    title:'Fifth Avenue', place:"St. Patrick's to the Apple Cube",
-    lat:40.7600, lng:-73.9750,
-    note:"St. Patrick's Cathedral, Saks, Bergdorf, the glass Apple Cube at 59th. Walk it north and you end up back at the park." },
+    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens. With Fifth Avenue moved to Sunday there is room for Top of the Rock here if you want a second deck — it is the better view of the two because the Empire State is in it.' },
 
   { id:'m6', day:'mon', start:'14:00', dur:30, cat:'hotel', fixed:true,
     title:'Collect bags, order the car', place:'Hard Rock Hotel, 159 W 48th St',
@@ -810,7 +849,7 @@ const BASE_ITEMS = [
 ];
 
 /* Quick-add library — coordinates baked in so adding a stop needs no geocoder */
-const LIBRARY = [
+let LIBRARY = [
   { title:'Top of the Rock',            place:'30 Rockefeller Plaza',      lat:40.7593, lng:-73.9790, cat:'view',   dur:75 },
   { title:'Edge observation deck',      place:'30 Hudson Yards',           lat:40.7538, lng:-74.0009, cat:'view',   dur:75 },
   { title:'Summit One Vanderbilt',      place:'45 E 42nd St',              lat:40.7527, lng:-73.9787, cat:'view',   dur:90 },
@@ -824,6 +863,12 @@ const LIBRARY = [
   { title:'Chelsea Market',             place:'75 Ninth Ave',              lat:40.7424, lng:-74.0061, cat:'shop',   dur:60  },
   { title:'Bethesda Terrace',           place:'Central Park',              lat:40.7740, lng:-73.9709, cat:'park',   dur:40  },
   { title:'United Nations tour',        place:'801 First Ave',             lat:40.7489, lng:-73.9680, cat:'sight',  dur:90  },
+  { title:'Prince Street Pizza',       place:'27 Prince St, Nolita',       lat:40.7233, lng:-73.9945, cat:'pizza',  dur:30  },
+  { title:"Lombardi's Pizza",          place:'32 Spring St',              lat:40.7215, lng:-73.9957, cat:'pizza',  dur:60  },
+  { title:'Ceres',                     place:'164 Mott St',               lat:40.7203, lng:-73.9958, cat:'pizza',  dur:40  },
+  { title:"Joe's Pizza",               place:'1435 Broadway at 40th',     lat:40.7549, lng:-73.9868, cat:'pizza',  dur:25  },
+  { title:"John's of Bleecker St",     place:'278 Bleecker St',           lat:40.7317, lng:-74.0035, cat:'pizza',  dur:70  },
+  { title:'The Oculus & Westfield',    place:'185 Greenwich St',          lat:40.7113, lng:-74.0110, cat:'shop',   dur:30  },
   { title:'Tudor City Overpass',      place:'E 42nd St at Tudor City Pl', lat:40.7495, lng:-73.9711, cat:'sight',  dur:25  },
   { title:'Hook & Ladder 8',          place:'14 North Moore St',         lat:40.7195, lng:-74.0067, cat:'sight',  dur:15  },
   { title:'Ghostbusters HQ (film)',   place:'55 Central Park West',      lat:40.7756, lng:-73.9754, cat:'sight',  dur:15  },
@@ -841,6 +886,7 @@ const LIBRARY = [
   { title:'Little Island',              place:'Pier 55, Hudson River Park',lat:40.7412, lng:-74.0102, cat:'park',   dur:45  },
   { title:'Staten Island Ferry',        place:'Whitehall Terminal',        lat:40.7013, lng:-74.0133, cat:'sight',  dur:75  }
 ];
+/*__TRIP_END__*/
 
 /* --------------------------------------------------------------------------
    2. GEOGRAPHY ENGINE
@@ -850,6 +896,7 @@ const LIBRARY = [
    go more or less straight, uses the crow line.
    -------------------------------------------------------------------------- */
 
+const BATTERY = { lat:40.7033, lng:-74.0170 };   /* where the ferry lands */
 const MI_PER_DEG_LAT = 69.0;
 const MI_PER_DEG_LNG = 52.44;            // at 40.75° N
 
@@ -914,7 +961,15 @@ function planLeg(from, to){
   }
   const fh = zoneOf(from) === 'harbor', th = zoneOf(to) === 'harbor';
   if (fh && th) return { mode:'ferry', min:15, detail:'Island-to-island hop, same ticket' };
-  if (fh || th) return { mode:'ferry', min:25, detail:'Statue City Cruises ferry, included in your ticket' };
+  if (fh || th){
+    /* the boat only gets you as far as Battery Park - the rest is on foot */
+    const land = fh ? to : from;
+    const onFoot = walkMinutes(BATTERY, land);
+    return { mode:'ferry', min: 25 + onFoot,
+      detail: onFoot > 6
+        ? `Ferry to Battery Park, then about ${onFoot} min north on foot`
+        : 'Statue City Cruises ferry, included in your ticket' };
+  }
 
   const walk = walkMinutes(from, to);
   const corr = corridorFor(from, to);
@@ -951,18 +1006,22 @@ function planLeg(from, to){
 const KEY = 'ogara-nyc-v' + TRIP_VERSION;
 let memoryOnly = false;
 
-const DEFAULT_STATE = {
-  version: TRIP_VERSION,
-  items: JSON.parse(JSON.stringify(BASE_ITEMS)),
-  credits: 350,
-  offer: 50,
-  offerMin: 150,
-  raters: ['Dad','Mom','Son','Daughter'],
-  scores: {},
-  activeDay: null
-};
+let DEFAULT_STATE = null;
+let S = null;
 
-let S = load();
+function initState(){
+  DEFAULT_STATE = {
+    version: TRIP_VERSION,
+    items: JSON.parse(JSON.stringify(BASE_ITEMS)),
+    credits: 350,
+    offer: 50,
+    offerMin: 150,
+    raters: ['Dad','Mom','Son','Daughter'],
+    scores: {},
+    activeDay: null
+  };
+  S = load();
+}
 
 function load(){
   try{
@@ -1389,7 +1448,8 @@ function renderVault(){
       <div class="money-cell"><span>Planned spend</span><b class="num">$${total}</b></div>
       <div class="money-cell"><span>Credits on hand</span><b class="num">$${S.credits}</b></div>
       <div class="money-cell"><span>$50 off $150</span><b class="num" style="color:${offerOk?'var(--line-6)':'var(--paper-mute)'}">${offerOk?'Armed':'Unused'}</b></div>
-      <div class="money-cell ${oop>0?'warn':'good'}"><span>Out of pocket</span><b class="num">$${oop}</b></div>
+      <div class="money-cell ${oop>0?'warn':'good'}"><span>Out of pocket</span><b class="num">${oop}</b></div>
+      <div class="money-cell good"><span>20% back earned</span><b class="num">${Math.round(total*0.2)}</b></div>
     </div>
     ${offerOk ? '' : `<p class="hint" style="margin-top:10px">No single inKind bill hits $${S.offerMin} yet, so the $50 offer is sitting idle. Push one dinner above that line and it fires.</p>`}
     ${inkind.map(i => `
@@ -1463,6 +1523,10 @@ function renderSetup(){
     <h3>Print</h3>
     <p>Prints a clean paper copy of every day, with confirmations. Worth having in a pocket when the phones die.</p>
     <button class="btn" id="printit">Print the whole trip</button>
+
+    ${VAULT ? `<h3>This device</h3>
+    <p>The pass phrase is saved here so nobody has to retype it at every subway stop. Clear it if the phone is lost, lent out, or sold.</p>
+    <button class="btn danger" id="forget">Forget the pass phrase</button>` : ''}
 
     <h3>Start over</h3>
     <p>Puts the published plan back and throws away every edit made on this device.</p>
@@ -1707,6 +1771,11 @@ document.addEventListener('click', e => {
     toast('Exported — send that file to the family');
   }
   if (e.target.id === 'import') $('#filein').click();
+  if (e.target.id === 'forget'){
+    if (confirm('Clear the saved pass phrase on this device? You will need it again next time.')){
+      forgetPass(); location.reload();
+    }
+  }
   if (e.target.id === 'printit') window.print();
   if (e.target.id === 'reset'){
     if (confirm('Throw away every edit on this device and go back to the published plan?')){
@@ -1740,11 +1809,87 @@ $('#pf-nav').onclick = () => {
   navigate(n, myPos || (i > 0 ? list[i-1] : null));
 };
 
-/* go */
-renderAll();
-showView('trip');
-setInterval(renderPlatform, 20000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) renderPlatform(); });
+/* --------------------------------------------------------------------------
+   16. LOCK
+   PBKDF2-SHA256 at 310,000 iterations derives a 256-bit key from the pass
+   phrase; the trip is sealed with AES-GCM. A wrong phrase does not produce
+   wrong data, it fails the authentication tag and produces nothing at all.
+   -------------------------------------------------------------------------- */
+
+const PASS_KEY = 'ogara-pass';
+const _enc = new TextEncoder(), _dec = new TextDecoder();
+const b64d = str => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+
+async function deriveKey(pass, salt){
+  const base = await crypto.subtle.importKey('raw', _enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:310000, hash:'SHA-256' },
+    base, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+}
+
+async function unlockVault(pass){
+  const raw  = b64d(VAULT);
+  const salt = raw.slice(0,16), iv = raw.slice(16,28), body = raw.slice(28);
+  const key  = await deriveKey(pass, salt);
+  const trip = JSON.parse(_dec.decode(
+    await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, body)));
+  DAYS = trip.days; BASE_ITEMS = trip.items;
+  if (trip.library) LIBRARY = trip.library;
+}
+
+const remembered = () => { try{ return localStorage.getItem(PASS_KEY); }catch(e){ return null; } };
+function forgetPass(){ try{ localStorage.removeItem(PASS_KEY); }catch(e){} }
+
+function start(){
+  $('#gate').style.display = 'none';
+  $('#app').style.display = '';
+  initState();
+  renderAll();
+  showView('trip');
+  setInterval(renderPlatform, 20000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderPlatform(); });
+}
+
+function showGate(msg){
+  $('#gate').style.display = 'grid';
+  $('#app').style.display = 'none';
+  if (msg) $('#gate-msg').textContent = msg;
+  setTimeout(() => $('#gate-pass').focus(), 60);
+}
+
+$('#gate-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pass = $('#gate-pass').value;
+  if (!pass) return;
+  $('#gate-msg').textContent = 'Checking…';
+  $('#gate-go').disabled = true;
+  try{
+    await unlockVault(pass);
+    if ($('#gate-remember').checked){ try{ localStorage.setItem(PASS_KEY, pass); }catch(err){} }
+    start();
+  }catch(err){
+    $('#gate-msg').textContent = 'That phrase does not open it. Try again.';
+    $('#gate-pass').value = '';
+    $('#gate-pass').focus();
+  }
+  $('#gate-go').disabled = false;
+});
+
+async function boot(){
+  if (!VAULT){ start(); return; }
+  if (!window.crypto || !crypto.subtle){
+    showGate('This page needs HTTPS to unlock. Open it over https:// and try again.');
+    return;
+  }
+  const saved = remembered();
+  if (saved){
+    try{ await unlockVault(saved); start(); return; }
+    catch(e){ forgetPass(); }
+  }
+  showGate();
+}
+
+boot();
 
 </script>
 </body>
