@@ -763,7 +763,7 @@ let BASE_ITEMS = [
   { id:'s6', day:'sat', start:'13:55', dur:40, cat:'sight',
     title:'9/11 Memorial pools', place:'180 Greenwich St',
     lat:40.7115, lng:-74.0134, url:'https://911memorial.org',
-    note:'The pools are free and outdoors. The walk up from the ferry landing runs straight past the Charging Bull at Bowling Green and Trinity Church — you get both without stopping for either, and Wall Street is three blocks east if anyone changes their mind.' },
+    note:'The pools are free and outdoors. The walk up from the ferry landing runs straight past the Charging Bull at Bowling Green and Trinity Church — you get both without stopping for either, and Wall Street is three blocks east if anyone changes their mind. The museum below needs two hours you do not have.' },
 
   { id:'s7', day:'sat', start:'14:45', dur:15, cat:'sight',
     title:"St. Paul's Chapel", place:'209 Broadway',
@@ -778,7 +778,8 @@ let BASE_ITEMS = [
   { id:'s8h', day:'sat', start:'16:00', dur:80, cat:'hotel',
     title:'Back to the hotel', place:'Hard Rock Hotel, 159 W 48th St',
     lat:40.7594, lng:-73.9840,
-    note:'Eighty minutes back at the hotel, enough for four people to shower, change out of eight hours of harbour and heat, and sit down for a bit before dinner.' }, 
+    note:'Eighty minutes back at the hotel, enough for four people to shower, change out of eight hours of harbour and heat, and sit down for a bit before dinner.' },
+
   { id:'s9', day:'sat', start:'17:30', dur:75, cat:'food', inkind:true, cost:180,
     title:"Dinner — Tony's Di Napoli", place:'147 W 43rd St',
     lat:40.7565, lng:-73.9855,
@@ -1462,8 +1463,8 @@ function renderVault(){
       <div class="money-cell"><span>Planned spend</span><b class="num">$${total}</b></div>
       <div class="money-cell"><span>Credits on hand</span><b class="num">$${S.credits}</b></div>
       <div class="money-cell"><span>$50 off $150</span><b class="num" style="color:${offerOk?'var(--line-6)':'var(--paper-mute)'}">${offerOk?'Armed':'Unused'}</b></div>
-      <div class="money-cell ${oop>0?'warn':'good'}"><span>Out of pocket</span><b class="num">${oop}</b></div>
-      <div class="money-cell good"><span>20% back earned</span><b class="num">${Math.round(total*0.2)}</b></div>
+      <div class="money-cell ${oop>0?'warn':'good'}"><span>Out of pocket</span><b class="num">$${oop}</b></div>
+      <div class="money-cell good"><span>20% back earned</span><b class="num">$${Math.round(total*0.2)}</b></div>
     </div>
     ${offerOk ? '' : `<p class="hint" style="margin-top:10px">No single inKind bill hits $${S.offerMin} yet, so the $50 offer is sitting idle. Push one dinner above that line and it fires.</p>`}
     ${inkind.map(i => `
