@@ -47,6 +47,9 @@
   --rail-x: 34px;          /* x-centre of the timeline rail    */
   --safe-b: env(safe-area-inset-bottom, 0px);
   --nav-h: 58px;
+  /* measured at runtime so the sticky offsets never drift out of sync */
+  --platform-h: 140px;
+  --days-h: 58px;
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -148,6 +151,8 @@ a{color:inherit}
   display:flex;gap:7px;padding:12px var(--pad);
   overflow-x:auto;scrollbar-width:none;
   border-bottom:1px solid var(--ink-3);
+  position:sticky;top:var(--platform-h);z-index:55;
+  background:var(--ink);
 }
 .day-chip{
   flex:none;display:flex;align-items:center;gap:8px;
@@ -293,7 +298,11 @@ a{color:inherit}
 /* ============================================================
    MAP
    ============================================================ */
-#mapwrap{position:relative;height:calc(100dvh - var(--nav-h) - var(--safe-b) - 118px)}
+#mapwrap{
+  position:relative;
+  height:calc(100dvh - var(--platform-h) - var(--days-h) - var(--nav-h) - var(--safe-b));
+  min-height:280px;
+}
 #map{position:absolute;inset:0;background:#111}
 .leaflet-container{background:#111;font-family:var(--font)}
 .map-legend{
@@ -1699,12 +1708,24 @@ function editSheet(id, dayId, atTime){
    15. WIRING
    -------------------------------------------------------------------------- */
 
+/* The platform strip changes height as its content changes (a countdown of
+   "8" is not as tall as "6:15pm"), so the sticky offset is measured rather
+   than guessed. */
+function measureChrome(){
+  const pf = $('#platform');
+  const days = document.querySelector('.view.active .days') || $('#days');
+  const root = document.documentElement.style;
+  if (pf && pf.offsetHeight)     root.setProperty('--platform-h', pf.offsetHeight + 'px');
+  if (days && days.offsetHeight) root.setProperty('--days-h', days.offsetHeight + 'px');
+}
+
 function showView(v){
   $$('.view').forEach(x => x.classList.remove('active'));
   $('#view-' + v).classList.add('active');
   $$('nav button').forEach(b =>
     b.dataset.view === v ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
-  if (v === 'map')   setTimeout(() => { drawMap(); map.invalidateSize(); }, 40);
+  measureChrome();
+  if (v === 'map')   setTimeout(() => { measureChrome(); drawMap(); map.invalidateSize(); }, 40);
   if (v === 'vault') renderVault();
   if (v === 'setup') renderSetup();
   window.scrollTo(0,0);
@@ -1846,6 +1867,10 @@ function start(){
   initState();
   renderAll();
   showView('trip');
+  measureChrome();
+  window.addEventListener('resize', measureChrome);
+  window.addEventListener('orientationchange', () => setTimeout(measureChrome, 120));
+  if (window.ResizeObserver) new ResizeObserver(measureChrome).observe($('#platform'));
   setInterval(renderPlatform, 20000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) renderPlatform(); });
 }
