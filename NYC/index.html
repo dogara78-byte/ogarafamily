@@ -682,7 +682,7 @@ nav button[aria-current="page"]{color:var(--paper)}
    `fixed: true` means the time cannot move (flights, curtain, timed entry).
    --------------------------------------------------------------------------- */
 
-const TRIP_VERSION = 15;
+const TRIP_VERSION = 16;
 
 /* The trip payload lives between the two markers below. lock.html encrypts
    everything in there with AES-256-GCM and blanks it out, leaving only
@@ -860,7 +860,7 @@ let BASE_ITEMS = [
   { id:'m9', day:'mon', start:'13:15', dur:15, cat:'sight',
     title:'Madison Square Garden', place:'4 Pennsylvania Plaza, 7th Ave at 33rd',
     lat:40.7505, lng:-73.9934,
-    note:'Ignore the long walk this app quotes you — both ends sit in the same Midtown zone so it never considers a train. The 1 from 50th St puts you at the door in five minutes. From the outside the Garden is a concrete drum on top of Penn Station, so the shot is from Chase Square off Seventh between 31st and 33rd, where the banners hang. Worth knowing: Moynihan Train Hall is one block west on Eighth, in the old Farley Post Office — a glass-vaulted skylit hall that is far better looking than anything on this block. Three extra minutes if you want it.' },
+    note:'From the outside the Garden is a concrete drum sitting on top of Penn Station, so the shot is from Chase Square off Seventh between 31st and 33rd, where the banners hang. Worth knowing: Moynihan Train Hall is one block west on Eighth, in the old Farley Post Office — a glass-vaulted skylit hall far better looking than anything else on this block. Three extra minutes if you want it.' },
 
   { id:'m6', day:'mon', start:'14:00', dur:30, cat:'hotel', fixed:true,
     title:'Collect bags, order the car', place:'Hard Rock Hotel, 159 W 48th St',
@@ -933,10 +933,20 @@ const BATTERY = { lat:40.7033, lng:-74.0170 };   /* where the ferry lands */
 const MI_PER_DEG_LAT = 69.0;
 const MI_PER_DEG_LNG = 52.44;            // at 40.75° N
 
+/* Manhattan's grid is rotated about 29 degrees east of true north, so a raw
+   north/east split misreads any diagonal leg — 50th & Sixth to 33rd & Seventh
+   looks crosstown in lat/lng when it is really seventeen blocks downtown.
+   Project onto the grid's own axes first: one along the avenues, one along
+   the streets. */
+const GRID_ROT = 29 * Math.PI / 180;
+const ROT_C = Math.cos(GRID_ROT), ROT_S = Math.sin(GRID_ROT);
+
 function legMiles(a, b){
-  const ns = Math.abs(a.lat - b.lat) * MI_PER_DEG_LAT;
-  const ew = Math.abs(a.lng - b.lng) * MI_PER_DEG_LNG;
-  return { ns, ew, grid: ns + ew, crow: Math.sqrt(ns*ns + ew*ew) };
+  const N = (b.lat - a.lat) * MI_PER_DEG_LAT;
+  const E = (b.lng - a.lng) * MI_PER_DEG_LNG;
+  const av = Math.abs(N * ROT_C + E * ROT_S);   // along the avenues, uptown/down
+  const st = Math.abs(-N * ROT_S + E * ROT_C);  // along the streets, crosstown
+  return { av, st, grid: av + st, crow: Math.hypot(N, E) };
 }
 
 function walkMinutes(a, b){
@@ -974,12 +984,15 @@ const CORRIDORS = [
   { a:'flat', b:'fidi',   lines:['4','5'],     via:'Lexington express downtown' },
   { a:'vill', b:'flat',   lines:['1','2','3'], via:'Seventh Ave line up to 14th St' },
   { a:'soho', b:'fidi',   lines:['R','W'],     via:'Broadway local down to Cortlandt' },
-  { a:'les',  b:'flat',   lines:['F','M'],     via:'Sixth Ave line up to 14th St' }
+  { a:'les',  b:'flat',   lines:['F','M'],     via:'Sixth Ave line up to 14th St' },
+  /* Midtown is a big zone. A long run down an avenue inside it is still a
+     train ride — Rockefeller Center to Penn Station is seventeen blocks. */
+  { a:'midW', b:'midW',   lines:['1','2','3'], via:'Seventh Ave line straight down — 50th St to 34th St–Penn' },
+  { a:'midE', b:'midE',   lines:['4','5','6'], via:'Lexington Ave line' }
 ];
 
 function corridorFor(a, b){
   const za = zoneOf(a), zb = zoneOf(b);
-  if (za === zb) return null;
   return CORRIDORS.find(c => (c.a===za && c.b===zb) || (c.a===zb && c.b===za)) || null;
 }
 
@@ -1008,19 +1021,31 @@ function planLeg(from, to){
   const corr = corridorFor(from, to);
   const subway = corr ? Math.round(6 + d.crow * 2.6 + 4) : null;
 
+  const crosstown = d.st > d.av;
+
   if (walk <= 18){
     return { mode:'walk', min:walk,
-      detail: d.ew > d.ns * 1.6
+      detail: crosstown
         ? 'Crosstown — the avenue blocks are the long ones'
-        : `About ${Math.round(d.grid*20)} blocks` };
+        : `About ${Math.round(d.av*20)} blocks` };
   }
 
-  /* Above ground in Midtown the train barely wins once you count stairs and
-     waiting, and you see nothing. Walk it. */
   const strollable = ['midW','midE','park','flat'];
-  if (walk <= 26 && strollable.includes(zoneOf(from)) && strollable.includes(zoneOf(to))){
+  const inMidtown = strollable.includes(zoneOf(from)) && strollable.includes(zoneOf(to));
+
+  /* No subway runs crosstown through Midtown, so east-west legs walk even
+     when they are long. */
+  if (crosstown && walk <= 26 && inMidtown){
     return { mode:'walk', min:walk,
-      detail:'The train barely beats this once you count the stairs — walk it' };
+      detail:'Crosstown, and no train runs this way — walk it' };
+  }
+
+  /* North-south there is a line under nearly every avenue, but a one- or
+     two-stop hop is not worth the stairs and the wait. Above about twenty
+     minutes on foot it starts to be. */
+  if (walk <= 22 && inMidtown){
+    return { mode:'walk', min:walk,
+      detail:'A stop or two on the train — the stairs and the wait eat the saving' };
   }
 
   if (subway && subway < walk - 7){
