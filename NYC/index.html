@@ -682,7 +682,7 @@ nav button[aria-current="page"]{color:var(--paper)}
    `fixed: true` means the time cannot move (flights, curtain, timed entry).
    --------------------------------------------------------------------------- */
 
-const TRIP_VERSION = 16;
+const TRIP_VERSION = 17;
 
 /* The trip payload lives between the two markers below. lock.html encrypts
    everything in there with AES-256-GCM and blanks it out, leaving only
@@ -837,27 +837,27 @@ let BASE_ITEMS = [
     note:'Housemade pasta, seafood and the veal chops, in the old Hotel Astor building right across from the Marquis you sat in last night. Sixteen minutes down from the top of Fifth Avenue and two blocks from your bed. This is where the $50-off-$150 offer should land — by Sunday your credits are spent down and this is the first bill you actually pay money on.' },
 
   /* ---------------------------- MONDAY ---------------------------------- */
-  { id:'m1', day:'mon', start:'08:30', dur:60, cat:'food', inkind:true, cost:150,
+  { id:'m1', day:'mon', start:'08:45', dur:65, cat:'food', inkind:true, cost:150,
     title:"Breakfast — Sarabeth's", place:'40 Central Park South',
     lat:40.7654, lng:-73.9760,
     note:'On inKind, and it puts you at the bottom edge of the park with the last of your credits spent.' },
 
-  { id:'m2', day:'mon', start:'09:40', dur:55, cat:'park',
+  { id:'m2', day:'mon', start:'10:00', dur:70, cat:'park',
     title:'Central Park stroll', place:'The Pond & Gapstow Bridge',
     lat:40.7669, lng:-73.9740,
-    note:'In at Grand Army Plaza, down to the Pond, over Gapstow Bridge with the skyline behind it. Push north to Bethesda Terrace if the legs are willing.' },
+    note:'In at Grand Army Plaza, down to the Pond, over Gapstow Bridge with the skyline behind it. Seventy minutes now, which is enough to push north to Bethesda Terrace and the fountain rather than turning back at the Pond.' },
 
-  { id:'m3', day:'mon', start:'11:00', dur:25, cat:'hotel', fixed:true,
-    title:'Check out — bags stored', place:'Hard Rock Hotel, 159 W 48th St',
+  { id:'m3', day:'mon', start:'08:00', dur:25, cat:'hotel', fixed:true,
+    title:'Check out, bags to the bell desk', place:'Hard Rock Hotel, 159 W 48th St',
     lat:40.7594, lng:-73.9840,
-    note:'Leave the luggage with the bell desk. You come back for it around 2:00.' },
+    note:'Settle up and hand the luggage over before breakfast rather than at eleven. Early checkout is always allowed, and doing it now means you never come back to this building until two o\'clock — no midday detour, no clock-watching. It buys about half an hour, and that half hour goes to the park and Rockefeller.' },
 
-  { id:'m4', day:'mon', start:'11:35', dur:65, cat:'sight',
+  { id:'m4', day:'mon', start:'11:25', dur:85, cat:'sight',
     title:'Rockefeller Plaza', place:'30 Rockefeller Plaza',
     lat:40.7587, lng:-73.9787,
     note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens — and FAO Schwarz is inside 30 Rock, so the toy-store stop lives here rather than on Fifth Avenue yesterday. Top of the Rock is also here if you want a second deck; it is the better view of the two because the Empire State is in it, but it would cost you the Garden.' },
 
-  { id:'m9', day:'mon', start:'13:15', dur:15, cat:'sight',
+  { id:'m9', day:'mon', start:'13:05', dur:20, cat:'sight',
     title:'Madison Square Garden', place:'4 Pennsylvania Plaza, 7th Ave at 33rd',
     lat:40.7505, lng:-73.9934,
     note:'From the outside the Garden is a concrete drum sitting on top of Penn Station, so the shot is from Chase Square off Seventh between 31st and 33rd, where the banners hang. Worth knowing: Moynihan Train Hall is one block west on Eighth, in the old Farley Post Office — a glass-vaulted skylit hall far better looking than anything else on this block. Three extra minutes if you want it.' },
@@ -865,7 +865,7 @@ let BASE_ITEMS = [
   { id:'m6', day:'mon', start:'14:00', dur:30, cat:'hotel', fixed:true,
     title:'Collect bags, order the car', place:'Hard Rock Hotel, 159 W 48th St',
     lat:40.7594, lng:-73.9840,
-    note:'Wheels rolling by 2:30 at the latest. Monday afternoon traffic to LaGuardia is the least forgiving ride of the trip and there is no version of this where leaving later works out.' },
+    note:'Straight back up Seventh from the Garden. Bags are already waiting at the bell desk, so this is a pickup, not a checkout. Wheels rolling by 2:30 at the latest — Monday afternoon traffic to LaGuardia is the least forgiving ride of the trip.' },
 
   { id:'m7', day:'mon', start:'15:30', dur:60, cat:'air', fixed:true,
     title:'LaGuardia — bags and security', place:'LGA Terminal C',
@@ -1794,7 +1794,8 @@ document.addEventListener('click', e => {
   if (t.dataset.day){
     S.activeDay = t.dataset.day; save(); renderDayChips(); renderTrip();
     if ($('#view-map').classList.contains('active')) drawMap();
-    return;
+    window.scrollTo(0, 0);   // land at the top of the new day, not wherever
+    return;                  // you happened to be scrolled to in the old one
   }
   if (t.dataset.nav)  { navById(t.dataset.nav); return; }
   if (t.dataset.edit) { editSheet(t.dataset.edit); return; }
