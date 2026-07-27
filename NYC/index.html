@@ -682,7 +682,7 @@ nav button[aria-current="page"]{color:var(--paper)}
    `fixed: true` means the time cannot move (flights, curtain, timed entry).
    --------------------------------------------------------------------------- */
 
-const TRIP_VERSION = 13;
+const TRIP_VERSION = 15;
 
 /* The trip payload lives between the two markers below. lock.html encrypts
    everything in there with AES-256-GCM and blanks it out, leaving only
@@ -697,9 +697,9 @@ let DAYS = [
   { id:'sat', date:'2026-08-15', label:'Saturday', short:'Sat 15', line:'1', color:'#EE352E', fg:'light',
     caption:'Harbor and downtown all day, Broadway at seven' },
   { id:'sun', date:'2026-08-16', label:'Sunday',   short:'Sun 16', line:'6', color:'#00933C', fg:'light',
-    caption:'Bagels, SoHo, Union Square, then Fifth Avenue' },
+    caption:'Bagels, Little Italy, Chinatown, SoHo, then Fifth Avenue' },
   { id:'mon', date:'2026-08-17', label:'Monday',   short:'Mon 17', line:'N', color:'#FCCC0A', fg:'dark',
-    caption:'Central Park, Rockefeller Plaza, then home' }
+    caption:'Central Park, Rockefeller, the Garden, then home' }
 ];
 
 let BASE_ITEMS = [
@@ -801,25 +801,35 @@ let BASE_ITEMS = [
     lat:40.7229, lng:-73.9944,
     note:'A sculpture garden wedged into a Nolita block, then the boutique run on Mulberry and Elizabeth. Prince Street Pizza is on this corner if the whim strikes — 27 Prince St, and it is on inKind.' },
 
-  { id:'u5', day:'sun', start:'10:20', dur:120, cat:'shop',
+  { id:'u3', day:'sun', start:'10:20', dur:45, cat:'sight',
+    title:'Little Italy — Mulberry Street', place:'Mulberry St between Broome and Canal',
+    lat:40.7191, lng:-73.9973,
+    note:'Five minutes downhill from the garden and the neighbourhood changes underfoot. Mulberry is the spine — Ferrara Bakery has been selling cannoli on it since 1892, and Di Palo\'s has been cutting cheese since 1925. This is also your pizza block if the whim strikes: Lombardi\'s at 32 Spring opened in 1905 and was the first pizzeria in America, and Rubirosa is on Mulberry itself.' },
+
+  { id:'u4', day:'sun', start:'11:20', dur:45, cat:'sight',
+    title:'Chinatown', place:'Mott St, Doyers St & Columbus Park',
+    lat:40.7158, lng:-73.9970,
+    note:'Cross Canal and it changes again — Little Italy is now about three blocks deep, and Chinatown surrounds it. Walk Mott south, then find Doyers Street: a one-block dogleg so sharp it was nicknamed the Bloody Angle during the tong wars. Columbus Park at the end is where the neighbourhood actually plays cards and practises tai chi. This is a working neighbourhood, not a set.' },
+
+  { id:'u5', day:'sun', start:'12:25', dur:85, cat:'shop',
     title:'SoHo shopping', place:'Broadway & Prince St',
     lat:40.7246, lng:-73.9977,
     note:'Broadway is the chains. The good stuff is on the cobblestones — Mercer, Greene, Wooster. The open block after this is deliberate: you are standing in the best pizza square mile in the city. Prince Street is four minutes away and on inKind, Lombardi\'s and Rubirosa are closer still, and Ceres is a block past Prince on Mott.' },
 
-  { id:'u8', day:'sun', start:'14:00', dur:55, cat:'shop',
+  { id:'u8', day:'sun', start:'14:10', dur:50, cat:'shop',
     title:'Barnes & Noble — Union Square', place:'33 E 17th St',
     lat:40.7370, lng:-73.9906,
     note:'This is the one. Since the old Fifth Avenue flagship closed in 2014, Union Square has been the largest store in the chain.' },
 
-  { id:'u9', day:'sun', start:'15:05', dur:35, cat:'shop',
+  { id:'u9', day:'sun', start:'15:10', dur:30, cat:'shop',
     title:'The Strand', place:'828 Broadway',
     lat:40.7333, lng:-73.9909,
     note:'Two blocks south. Eighteen miles of books, and honestly the better bookstore of the two. Do both.' },
 
-  { id:'m5', day:'sun', start:'16:15', dur:95, cat:'shop',
+  { id:'m5', day:'sun', start:'16:15', dur:90, cat:'shop',
     title:'Fifth Avenue', place:"St. Patrick's to the Apple Cube",
     lat:40.7600, lng:-73.9750,
-    note:"St. Patrick's Cathedral, Saks, Bergdorf, and the glass Apple Cube at 59th. Walk it north and the park is right there at the top." },
+    note:"Start at St. Patrick's and work north — Saks, Bergdorf, the glass Apple Cube at 59th, and the park right there at the top. Rockefeller Center is directly across Fifth from the cathedral, but leave it: that is Monday morning's job and FAO Schwarz is inside it." },
 
   { id:'u10', day:'sun', start:'18:15', dur:90, cat:'food', inkind:true, cost:190, offer:true,
     title:'Dinner — Bond 45', place:'221 W 46th St',
@@ -842,10 +852,15 @@ let BASE_ITEMS = [
     lat:40.7594, lng:-73.9840,
     note:'Leave the luggage with the bell desk. You come back for it around 2:00.' },
 
-  { id:'m4', day:'mon', start:'11:35', dur:75, cat:'sight',
+  { id:'m4', day:'mon', start:'11:35', dur:65, cat:'sight',
     title:'Rockefeller Plaza', place:'30 Rockefeller Plaza',
     lat:40.7587, lng:-73.9787,
-    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens. With Fifth Avenue moved to Sunday there is room for Top of the Rock here if you want a second deck — it is the better view of the two because the Empire State is in it.' },
+    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens — and FAO Schwarz is inside 30 Rock, so the toy-store stop lives here rather than on Fifth Avenue yesterday. Top of the Rock is also here if you want a second deck; it is the better view of the two because the Empire State is in it, but it would cost you the Garden.' },
+
+  { id:'m9', day:'mon', start:'13:15', dur:15, cat:'sight',
+    title:'Madison Square Garden', place:'4 Pennsylvania Plaza, 7th Ave at 33rd',
+    lat:40.7505, lng:-73.9934,
+    note:'Ignore the long walk this app quotes you — both ends sit in the same Midtown zone so it never considers a train. The 1 from 50th St puts you at the door in five minutes. From the outside the Garden is a concrete drum on top of Penn Station, so the shot is from Chase Square off Seventh between 31st and 33rd, where the banners hang. Worth knowing: Moynihan Train Hall is one block west on Eighth, in the old Farley Post Office — a glass-vaulted skylit hall that is far better looking than anything on this block. Three extra minutes if you want it.' },
 
   { id:'m6', day:'mon', start:'14:00', dur:30, cat:'hotel', fixed:true,
     title:'Collect bags, order the car', place:'Hard Rock Hotel, 159 W 48th St',
@@ -878,6 +893,9 @@ let LIBRARY = [
   { title:'Chelsea Market',             place:'75 Ninth Ave',              lat:40.7424, lng:-74.0061, cat:'shop',   dur:60  },
   { title:'Bethesda Terrace',           place:'Central Park',              lat:40.7740, lng:-73.9709, cat:'park',   dur:40  },
   { title:'United Nations tour',        place:'801 First Ave',             lat:40.7489, lng:-73.9680, cat:'sight',  dur:90  },
+  { title:'Ferrara Bakery',           place:'195 Grand St, Little Italy',  lat:40.7191, lng:-73.9969, cat:'food',   dur:30  },
+  { title:'Doyers Street',            place:'Chinatown',                  lat:40.7146, lng:-73.9977, cat:'sight',  dur:15  },
+  { title:'Moynihan Train Hall',      place:'421 Eighth Ave',              lat:40.7506, lng:-73.9972, cat:'sight',  dur:20  },
   { title:'Prince Street Pizza',       place:'27 Prince St, Nolita',       lat:40.7233, lng:-73.9945, cat:'pizza',  dur:30  },
   { title:"Lombardi's Pizza",          place:'32 Spring St',              lat:40.7215, lng:-73.9957, cat:'pizza',  dur:60  },
   { title:'Ceres',                     place:'164 Mott St',               lat:40.7203, lng:-73.9958, cat:'pizza',  dur:40  },
