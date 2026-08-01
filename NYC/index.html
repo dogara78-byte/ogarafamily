@@ -491,54 +491,6 @@ nav button[aria-current="page"]{color:var(--paper)}
 .view{display:none}
 .view.active{display:block}
 
-/* ============================================================
-   GATE
-   Nothing loads behind this until the phrase decrypts the trip.
-   ============================================================ */
-#gate{
-  position:fixed;inset:0;z-index:200;display:none;
-  place-items:center;background:var(--ink);padding:24px;
-}
-.gate-card{width:100%;max-width:330px;text-align:center}
-.gate-bullets{display:flex;justify-content:center;gap:8px;margin-bottom:26px}
-.gate-bullets .bullet{width:38px;height:38px;font-size:19px}
-.gate-card h1{
-  margin:0;font-size:25px;font-weight:900;letter-spacing:-.035em;
-}
-.gate-card .sub{
-  font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--paper-mute);margin-top:8px;
-}
-#gate-form{margin-top:30px;text-align:left}
-#gate-form label.lab{
-  display:block;font-size:9.5px;font-weight:800;letter-spacing:.15em;
-  text-transform:uppercase;color:var(--paper-mute);margin-bottom:6px;
-}
-#gate-pass{
-  width:100%;padding:14px 14px;border-radius:5px;text-align:center;
-  background:#0F1113;border:1px solid var(--ink-3);color:var(--paper);
-  font-size:17px;letter-spacing:.14em;
-}
-#gate-pass:focus{outline:2px solid var(--paper);outline-offset:1px;border-color:transparent}
-.gate-remember{
-  display:flex;align-items:center;gap:9px;margin:14px 2px 0;
-  font-size:12px;color:var(--paper-dim);cursor:pointer;
-}
-.gate-remember input{width:17px;height:17px;accent-color:var(--paper)}
-#gate-go{
-  width:100%;margin-top:18px;padding:14px;border-radius:5px;
-  background:var(--paper);color:var(--ink);
-  font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-}
-#gate-go:disabled{opacity:.45}
-#gate-msg{
-  min-height:18px;margin-top:14px;text-align:center;
-  font-size:12px;font-weight:600;color:var(--alert);
-}
-.gate-foot{
-  margin-top:26px;font-size:11px;line-height:1.5;color:var(--paper-mute);text-align:center;
-}
-
 .empty{
   padding:40px var(--pad);text-align:center;color:var(--paper-mute);
   font-size:13px;line-height:1.5;
@@ -557,30 +509,6 @@ nav button[aria-current="page"]{color:var(--paper)}
 </style>
 </head>
 <body>
-
-<div id="gate">
-  <div class="gate-card">
-    <div class="gate-bullets">
-      <span class="bullet" style="background:#B933AD">7</span>
-      <span class="bullet" style="background:#EE352E">1</span>
-      <span class="bullet" style="background:#00933C">6</span>
-      <span class="bullet" style="background:#FCCC0A" data-fg="dark">N</span>
-    </div>
-    <h1>O'Gara / New York</h1>
-    <div class="sub">August 14–17, 2026</div>
-    <form id="gate-form" autocomplete="on">
-      <label class="lab" for="gate-pass">Pass phrase</label>
-      <input type="password" id="gate-pass" name="password" autocomplete="current-password"
-             autocapitalize="off" autocorrect="off" spellcheck="false">
-      <label class="gate-remember">
-        <input type="checkbox" id="gate-remember" checked> Remember on this phone
-      </label>
-      <button type="submit" id="gate-go">Enter</button>
-      <div id="gate-msg" role="status" aria-live="polite"></div>
-    </form>
-    <div class="gate-foot">Ask Dad.</div>
-  </div>
-</div>
 
 <div id="app">
 
@@ -682,16 +610,9 @@ nav button[aria-current="page"]{color:var(--paper)}
    `fixed: true` means the time cannot move (flights, curtain, timed entry).
    --------------------------------------------------------------------------- */
 
-const TRIP_VERSION = 17;
+const TRIP_VERSION = 22;
 
-/* The trip payload lives between the two markers below. lock.html encrypts
-   everything in there with AES-256-GCM and blanks it out, leaving only
-   ciphertext in VAULT. Nothing readable stays behind. */
-let VAULT = null; /*__VAULT__*/
-
-/*__TRIP_START__*/
-
-let DAYS = [
+const DAYS = [
   { id:'fri', date:'2026-08-14', label:'Friday',   short:'Fri 14', line:'7', color:'#B933AD', fg:'light',
     caption:'Arrive, Midtown east-to-west, Empire State after dark' },
   { id:'sat', date:'2026-08-15', label:'Saturday', short:'Sat 15', line:'1', color:'#EE352E', fg:'light',
@@ -702,7 +623,7 @@ let DAYS = [
     caption:'Central Park, Rockefeller, the Garden, then home' }
 ];
 
-let BASE_ITEMS = [
+const BASE_ITEMS = [
   /* ---------------------------- FRIDAY ---------------------------------- */
   { id:'f1', day:'fri', start:'13:11', dur:45, cat:'air', fixed:true,
     title:'Land at LaGuardia', place:'LaGuardia Airport, Terminal C',
@@ -748,7 +669,7 @@ let BASE_ITEMS = [
   { id:'s1', day:'sat', start:'08:15', dur:45, cat:'sight',
     title:'Battery Park — ferry security', place:'Castle Clinton, Battery Park',
     lat:40.7033, lng:-74.0170,
-    note:'Screening runs like an airport and it is the one thing that can cost you the boat. Leave the hotel by 8:15 to be screened comfortably before 9:30.' },
+    note:'Screening runs like an airport and it is the one thing that can cost you the boat, so leave the hotel by 7:45 to be screened comfortably before 9:30. Breakfast is whatever you find on the way out — there are delis and carts on nearly every block around the hotel, and the ferry terminal has coffee. Eat on the boat if it comes to that; the crossing is fifteen minutes and the view is the point anyway.' },
 
   { id:'s2', day:'sat', start:'09:30', dur:135, cat:'sight', fixed:true,
     title:'Statue of Liberty — Pedestal', place:'Liberty Island',
@@ -791,15 +712,15 @@ let BASE_ITEMS = [
     note:'Roughly 2h50 with intermission, so you are out around 9:50. Four Tony Awards for its stagecraft, and it is set in Hawkins, Indiana, which will land differently for your table than for most of the house. Joe\'s Pizza at 40th and Broadway is open late and five minutes away if anyone wants a slice on the walk back.' },
 
   /* ---------------------------- SUNDAY ---------------------------------- */
-  { id:'u1', day:'sun', start:'08:30', dur:50, cat:'bagel',
-    title:'Russ & Daughters', place:'179 E Houston St',
-    lat:40.7226, lng:-73.9882,
-    note:'Appetizing shop since 1914, hand-sliced nova, and the counter theatre is half the reason to go. This is the bagel morning. Ess-a-Bagel is the alternate if you want the big overstuffed Midtown version instead.' },
+  { id:'u1', day:'sun', start:'08:20', dur:40, cat:'bagel',
+    title:'Best Bagel & Coffee', place:'225 W 35th St, between 7th and 8th',
+    lat:40.7525, lng:-73.9910,
+    note:'Hand-rolled and baked on the premises, opens at 7, and it cooks meat — bacon, sausage, ham, Taylor ham, egg and cheese — alongside fifteen-odd cream cheeses and a serious lox bagel, so everyone at the table gets what they actually want. Sixteen minutes down from the hotel on foot, or one stop on the 1. Seating is scarce and the line looks alarming but moves fast, so plan on taking it with you. Herald Square station is right there for the ride downtown.' },
 
   { id:'u2', day:'sun', start:'09:40', dur:25, cat:'sight',
     title:'Elizabeth Street Garden & Nolita', place:'209 Elizabeth St',
     lat:40.7229, lng:-73.9944,
-    note:'A sculpture garden wedged into a Nolita block, then the boutique run on Mulberry and Elizabeth. Prince Street Pizza is on this corner if the whim strikes — 27 Prince St, and it is on inKind.' },
+    note:'The N or R from Herald Square drops you at Prince St, about fifteen minutes, and you come up in a different city — a sculpture garden wedged into a Nolita block, then the boutique run on Mulberry and Elizabeth. Prince Street Pizza is on this corner if the whim strikes: 27 Prince St, and it is on inKind.' },
 
   { id:'u3', day:'sun', start:'10:20', dur:45, cat:'sight',
     title:'Little Italy — Mulberry Street', place:'Mulberry St between Broome and Canal',
@@ -837,25 +758,20 @@ let BASE_ITEMS = [
     note:'Housemade pasta, seafood and the veal chops, in the old Hotel Astor building right across from the Marquis you sat in last night. Sixteen minutes down from the top of Fifth Avenue and two blocks from your bed. This is where the $50-off-$150 offer should land — by Sunday your credits are spent down and this is the first bill you actually pay money on.' },
 
   /* ---------------------------- MONDAY ---------------------------------- */
-  { id:'m1', day:'mon', start:'08:45', dur:65, cat:'food', inkind:true, cost:150,
-    title:"Breakfast — Sarabeth's", place:'40 Central Park South',
-    lat:40.7654, lng:-73.9760,
-    note:'On inKind, and it puts you at the bottom edge of the park with the last of your credits spent.' },
-
-  { id:'m2', day:'mon', start:'10:00', dur:70, cat:'park',
+  { id:'m2', day:'mon', start:'09:30', dur:70, cat:'park',
     title:'Central Park stroll', place:'The Pond & Gapstow Bridge',
     lat:40.7669, lng:-73.9740,
-    note:'In at Grand Army Plaza, down to the Pond, over Gapstow Bridge with the skyline behind it. Seventy minutes now, which is enough to push north to Bethesda Terrace and the fountain rather than turning back at the Pond.' },
+    note:'Twenty minutes up Sixth Avenue from the hotel. In at Grand Army Plaza, down to the Pond, over Gapstow Bridge with the skyline behind it, and with seventy-five minutes you can push north to Bethesda Terrace and the fountain rather than turning back at the Pond.' },
 
-  { id:'m3', day:'mon', start:'08:00', dur:25, cat:'hotel', fixed:true,
+  { id:'m3', day:'mon', start:'08:40', dur:25, cat:'hotel', fixed:true,
     title:'Check out, bags to the bell desk', place:'Hard Rock Hotel, 159 W 48th St',
     lat:40.7594, lng:-73.9840,
-    note:'Settle up and hand the luggage over before breakfast rather than at eleven. Early checkout is always allowed, and doing it now means you never come back to this building until two o\'clock — no midday detour, no clock-watching. It buys about half an hour, and that half hour goes to the park and Rockefeller.' },
+    note:'Settle the room, hand the luggage to the bell desk, and you never come back to this building until two o\'clock — no midday detour, no clock-watching. That is what gives the park and Rockefeller their room today. Grab breakfast on the walk up Sixth, or wait and eat properly at Rockefeller, where you have ninety minutes.' },
 
-  { id:'m4', day:'mon', start:'11:25', dur:85, cat:'sight',
+  { id:'m4', day:'mon', start:'11:00', dur:90, cat:'sight',
     title:'Rockefeller Plaza', place:'30 Rockefeller Plaza',
     lat:40.7587, lng:-73.9787,
-    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens — and FAO Schwarz is inside 30 Rock, so the toy-store stop lives here rather than on Fifth Avenue yesterday. Top of the Rock is also here if you want a second deck; it is the better view of the two because the Empire State is in it, but it would cost you the Garden.' },
+    note:'The sunken plaza, Prometheus, Atlas across the street, the Channel Gardens — and FAO Schwarz is inside 30 Rock, so the toy-store stop lives here rather than on Fifth Avenue yesterday. Ninety minutes covers the plaza, the toy store and lunch nearby, or the plaza and Top of the Rock if you want a second deck. Not all three.' },
 
   { id:'m9', day:'mon', start:'13:05', dur:20, cat:'sight',
     title:'Madison Square Garden', place:'4 Pennsylvania Plaza, 7th Ave at 33rd',
@@ -879,7 +795,7 @@ let BASE_ITEMS = [
 ];
 
 /* Quick-add library — coordinates baked in so adding a stop needs no geocoder */
-let LIBRARY = [
+const LIBRARY = [
   { title:'Top of the Rock',            place:'30 Rockefeller Plaza',      lat:40.7593, lng:-73.9790, cat:'view',   dur:75 },
   { title:'Edge observation deck',      place:'30 Hudson Yards',           lat:40.7538, lng:-74.0009, cat:'view',   dur:75 },
   { title:'Summit One Vanderbilt',      place:'45 E 42nd St',              lat:40.7527, lng:-73.9787, cat:'view',   dur:90 },
@@ -906,6 +822,8 @@ let LIBRARY = [
   { title:'Hook & Ladder 8',          place:'14 North Moore St',         lat:40.7195, lng:-74.0067, cat:'sight',  dur:15  },
   { title:'Ghostbusters HQ (film)',   place:'55 Central Park West',      lat:40.7756, lng:-73.9754, cat:'sight',  dur:15  },
   { title:'Bryant Park',                place:'Sixth Ave at 42nd',         lat:40.7536, lng:-73.9832, cat:'park',   dur:30  },
+  { title:'Russ & Daughters',          place:'179 E Houston St',            lat:40.7226, lng:-73.9882, cat:'bagel',  dur:50  },
+  { title:'Best Bagel & Coffee',       place:'225 W 35th St',               lat:40.7525, lng:-73.9910, cat:'bagel',  dur:40  },
   { title:'Ess-a-Bagel',                place:'831 Third Ave',             lat:40.7561, lng:-73.9709, cat:'bagel',  dur:40  },
   { title:'Katz\'s Delicatessen',       place:'205 E Houston St',          lat:40.7223, lng:-73.9874, cat:'food',   dur:60  },
   { title:'Grimaldi\'s (DUMBO)',        place:'1 Front St, Brooklyn',      lat:40.7026, lng:-73.9934, cat:'pizza',  dur:60  },
@@ -919,7 +837,6 @@ let LIBRARY = [
   { title:'Little Island',              place:'Pier 55, Hudson River Park',lat:40.7412, lng:-74.0102, cat:'park',   dur:45  },
   { title:'Staten Island Ferry',        place:'Whitehall Terminal',        lat:40.7013, lng:-74.0133, cat:'sight',  dur:75  }
 ];
-/*__TRIP_END__*/
 
 /* --------------------------------------------------------------------------
    2. GEOGRAPHY ENGINE
@@ -1582,10 +1499,6 @@ function renderSetup(){
     <p>Prints a clean paper copy of every day, with confirmations. Worth having in a pocket when the phones die.</p>
     <button class="btn" id="printit">Print the whole trip</button>
 
-    ${VAULT ? `<h3>This device</h3>
-    <p>The pass phrase is saved here so nobody has to retype it at every subway stop. Clear it if the phone is lost, lent out, or sold.</p>
-    <button class="btn danger" id="forget">Forget the pass phrase</button>` : ''}
-
     <h3>Start over</h3>
     <p>Puts the published plan back and throws away every edit made on this device.</p>
     <button class="btn danger" id="reset">Reset to the published plan</button>
@@ -1842,11 +1755,6 @@ document.addEventListener('click', e => {
     toast('Exported — send that file to the family');
   }
   if (e.target.id === 'import') $('#filein').click();
-  if (e.target.id === 'forget'){
-    if (confirm('Clear the saved pass phrase on this device? You will need it again next time.')){
-      forgetPass(); location.reload();
-    }
-  }
   if (e.target.id === 'printit') window.print();
   if (e.target.id === 'reset'){
     if (confirm('Throw away every edit on this device and go back to the published plan?')){
@@ -1881,90 +1789,20 @@ $('#pf-nav').onclick = () => {
 };
 
 /* --------------------------------------------------------------------------
-   16. LOCK
-   PBKDF2-SHA256 at 310,000 iterations derives a 256-bit key from the pass
-   phrase; the trip is sealed with AES-GCM. A wrong phrase does not produce
-   wrong data, it fails the authentication tag and produces nothing at all.
+   16. GO
    -------------------------------------------------------------------------- */
 
-const PASS_KEY = 'ogara-pass';
-const _enc = new TextEncoder(), _dec = new TextDecoder();
-const b64d = str => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+initState();
+renderAll();
+showView('trip');
+measureChrome();
 
-async function deriveKey(pass, salt){
-  const base = await crypto.subtle.importKey('raw', _enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    { name:'PBKDF2', salt, iterations:310000, hash:'SHA-256' },
-    base, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
-}
+window.addEventListener('resize', measureChrome);
+window.addEventListener('orientationchange', () => setTimeout(measureChrome, 120));
+if (window.ResizeObserver) new ResizeObserver(measureChrome).observe($('#platform'));
 
-async function unlockVault(pass){
-  const raw  = b64d(VAULT);
-  const salt = raw.slice(0,16), iv = raw.slice(16,28), body = raw.slice(28);
-  const key  = await deriveKey(pass, salt);
-  const trip = JSON.parse(_dec.decode(
-    await crypto.subtle.decrypt({ name:'AES-GCM', iv }, key, body)));
-  DAYS = trip.days; BASE_ITEMS = trip.items;
-  if (trip.library) LIBRARY = trip.library;
-}
-
-const remembered = () => { try{ return localStorage.getItem(PASS_KEY); }catch(e){ return null; } };
-function forgetPass(){ try{ localStorage.removeItem(PASS_KEY); }catch(e){} }
-
-function start(){
-  $('#gate').style.display = 'none';
-  $('#app').style.display = '';
-  initState();
-  renderAll();
-  showView('trip');
-  measureChrome();
-  window.addEventListener('resize', measureChrome);
-  window.addEventListener('orientationchange', () => setTimeout(measureChrome, 120));
-  if (window.ResizeObserver) new ResizeObserver(measureChrome).observe($('#platform'));
-  setInterval(renderPlatform, 20000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderPlatform(); });
-}
-
-function showGate(msg){
-  $('#gate').style.display = 'grid';
-  $('#app').style.display = 'none';
-  if (msg) $('#gate-msg').textContent = msg;
-  setTimeout(() => $('#gate-pass').focus(), 60);
-}
-
-$('#gate-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const pass = $('#gate-pass').value;
-  if (!pass) return;
-  $('#gate-msg').textContent = 'Checking…';
-  $('#gate-go').disabled = true;
-  try{
-    await unlockVault(pass);
-    if ($('#gate-remember').checked){ try{ localStorage.setItem(PASS_KEY, pass); }catch(err){} }
-    start();
-  }catch(err){
-    $('#gate-msg').textContent = 'That phrase does not open it. Try again.';
-    $('#gate-pass').value = '';
-    $('#gate-pass').focus();
-  }
-  $('#gate-go').disabled = false;
-});
-
-async function boot(){
-  if (!VAULT){ start(); return; }
-  if (!window.crypto || !crypto.subtle){
-    showGate('This page needs HTTPS to unlock. Open it over https:// and try again.');
-    return;
-  }
-  const saved = remembered();
-  if (saved){
-    try{ await unlockVault(saved); start(); return; }
-    catch(e){ forgetPass(); }
-  }
-  showGate();
-}
-
-boot();
+setInterval(renderPlatform, 20000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) renderPlatform(); });
 
 </script>
 </body>
